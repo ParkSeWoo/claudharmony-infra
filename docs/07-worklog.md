@@ -394,6 +394,11 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 **남은 것**: 토큰 Access 권한 → Access + 공개 주소 / console 저장소 러너 등록 / 2단계(제어)
 
+### 31. 콘솔 자동 새로고침 → 수동 버튼
+
+- 사용자: "10초마다 자동 새로고침은 나중에" → htmx `every 10s/60s/5s` 제거, `refresh from:body` 이벤트 + 상단 **새로고침** 버튼(마지막 갱신 시각 표시)
+- 배포 `console-7967449` (러너 미등록이라 `deploy.sh` 수동 실행)
+
 ---
 
 ## 템플릿 (다음 작업용)

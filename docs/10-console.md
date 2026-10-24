@@ -14,9 +14,9 @@ AWS/GCP 콘솔처럼 사무실 Kubernetes 인프라를 한 화면에서 보는 �
 |------|------|
 | 대시보드 | 노드(Ready·버전·CPU/MEM), 플랫폼 구성요소(Gateway·도메인 터널·CNPG·Envoy Gateway·metrics-server), 외부 접속(응답코드·버전·지연), 환경 카드(prd/dev/console), 최근 배포 |
 | 환경 상세 `/env/{ns}` | 서비스별 Pod·재시작·노드·CPU/MEM, PostgreSQL 상태, HTTPRoute(호스트·경로·Accepted), 최근 1시간 경고 이벤트 |
-| 로그 `/env/{ns}/logs/{svc}` | 마지막 200줄(최대 2000), 5초 갱신 |
+| 로그 `/env/{ns}/logs/{svc}` | 마지막 200줄(최대 2000), 새로고침 버튼으로 갱신 |
 
-- 화면은 htmx 로 **10초마다 자동 갱신** (배포 이력은 60초, GitHub 비인증 API 2분 캐시)
+- 화면 갱신은 상단 **새로고침 버튼**으로만 (자동 갱신은 사용자 요청으로 보류). 배포 이력은 GitHub 비인증 API 2분 캐시
 - 상태를 바꾸는 엔드포인트는 **없음**
 
 ## 구조

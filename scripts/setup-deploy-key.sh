@@ -17,7 +17,8 @@ if ! gh api "repos/$REPO/keys" --jq '.[].key' | grep -qF "$(cut -d' ' -f1-2 "$KE
 fi
 
 [ -d "$CLONE/.git" ] || git clone "https://github.com/$REPO.git" "$CLONE"
-git -C "$CLONE" remote set-url origin "git@github.com:$REPO.git"
+# 사무실 네트워크가 22번 포트를 막아서 GitHub 의 SSH-over-443 (ssh.github.com:443) 사용
+git -C "$CLONE" remote set-url origin "ssh://git@ssh.github.com:443/$REPO.git"
 git -C "$CLONE" config core.sshCommand "ssh -i $KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 
 # 확인: 에이전트/키체인 없이 deploy key 만으로 접근되는지

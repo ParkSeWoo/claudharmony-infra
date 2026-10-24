@@ -4,7 +4,7 @@
 
 사무실 Mac 위의 **Kubernetes v1.37 (kind)** 클러스터에 **Envoy Gateway (Gateway API)** 를 두고,
 `dev` / `prd` **Namespace** 에 Spring Boot 앱을 올린다. 전부 **Terraform** 으로 관리하고,
-사무실이 이중 NAT 라서 외부 공개는 **Cloudflare Tunnel** 로 한다.
+사무실이 이중 NAT 라서 외부 공개는 **Cloudflare Tunnel + 도메인 `claudharmony.io`** 로 한다 ([도메인 연결](08-domain.md)).
 
 ## 요청 흐름
 
@@ -40,13 +40,13 @@ flowchart LR
 
 | 접속 경로 | prd | dev |
 |-----------|-----|-----|
-| 외부 | `scripts/infra.sh prd url` 의 주소 | `scripts/infra.sh dev url` 의 주소 |
+| 외부 | https://claudharmony.io (www 포함) | https://dev.claudharmony.io |
 | 이 Mac | http://localhost/ | http://dev.localhost/ |
 | 사무실 LAN | http://192.168.45.214/ | (Host 헤더 필요 — 터널 사용) |
 
 - 호스트에 열린 포트는 **80 하나** (kind control-plane 노드의 30080 으로 연결).
 - 어느 환경으로 갈지는 **Host 헤더**로 나뉜다. prd 라우트는 hostnames 가 비어 있어서 기본값(catch-all)이 되고, dev 는 `dev.localhost` 일 때만 매칭된다.
-- dev 터널은 `--http-host-header dev.localhost` 로 Host 를 바꿔서 Gateway 로 보낸다.
+- 도메인 터널(ns `edge`)은 Host 헤더를 그대로 Gateway 로 보낸다 → `dev.claudharmony.io` 는 dev 라우트, 나머지는 prd(catch-all).
 - `/actuator/**` 는 HTTPRoute 에서 `/` 로 리다이렉트 → 외부 비공개. Pod 의 liveness/readiness probe 는 kubelet 이 Pod 에 직접 호출하므로 영향 없음.
 
 ## 계층 구조 (3단계)
@@ -54,7 +54,8 @@ flowchart LR
 | 단계 | 디렉토리 | 만드는 것 | 바뀌는 빈도 | 적용 |
 |------|----------|-----------|-------------|------|
 | 1 | `platform/cluster` | kind 클러스터 (노드 2대) | 거의 안 바뀜 | 수동 |
-| 2 | `platform/gateway` | Envoy Gateway, GatewayClass, Gateway | 가끔 | 수동 |
+| 2 | `platform/gateway` | Envoy Gateway, GatewayClass, Gateway | 가끔 | main 머지 시 자동 |
+| 2.5 | `platform/edge` | Cloudflare 터널·DNS(claudharmony.io) + cloudflared × 2 (ns `edge`) | 거의 안 바뀜 | 수동 |
 | 3 | `envs/dev`, `envs/prd` | Namespace, Deployment, Service, HTTPRoute, 터널 | 배포마다 | dev 자동 / prd 수동 |
 
 각 단계는 **별도 Terraform state** (`~/.claudharmony/state/<stack>.tfstate`) 를 가진다.
@@ -112,7 +113,7 @@ flowchart LR
 | ECS Service / ASG | Cloud Run / MIG | **Deployment** (+ReplicaSet, Pod) | `modules/k8s/app` |
 | Target Group / 내부 DNS | Backend service | **Service** (ClusterIP) | `modules/k8s/app` |
 | ECR | Artifact Registry | (지금) `kind load` / (나중) 레지스트리 | `scripts/deploy.sh` |
-| Internet Gateway | Cloud NAT/외부 IP | Cloudflare Tunnel | `modules/k8s/tunnel` |
+| Internet Gateway + Route 53/ACM | Cloud DNS + 외부 IP/인증서 | Cloudflare Tunnel + DNS + 엣지 TLS | `platform/edge` |
 | Tags | Labels | Labels `app.kubernetes.io/*`, `claudharmony.io/*` | 전 모듈 |
 
 ## 버전 (2026-10-24)

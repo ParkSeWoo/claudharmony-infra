@@ -22,10 +22,26 @@ kubectl get nodes
 kubectl --kubeconfig ~/.claudharmony/kubeconfig get nodes
 ```
 
-`~/.zshrc` 에 넣어두면 편하다:
+`~/.zshrc` 에 넣어두면 편하다 (2026-10-24 적용됨, 백업 `~/.zshrc.bak-20261024`):
 ```bash
+# 여러 kubeconfig 를 합쳐서 사용 — kubectl/k9s 에서 컨텍스트 전환
+export KUBECONFIG="$HOME/.claudharmony/kubeconfig:$HOME/.kube/config:$HOME/.lima/k3s/copied-from-guest/kubeconfig.yaml"
+alias k9ch='k9s --kubeconfig ~/.claudharmony/kubeconfig --context kind-claudharmony'
 alias kch='kubectl --kubeconfig ~/.claudharmony/kubeconfig --context kind-claudharmony'
 ```
+
+### k9s
+
+예전에는 `KUBECONFIG` 가 lima k3s 파일 하나만 가리켜서 k9s 에 아무 클러스터도 안 보였다. 위처럼 합친 뒤:
+
+| 입력 | 동작 |
+|------|------|
+| `k9s` → `:ctx` | 클러스터 전환 (`kind-claudharmony`, `kind-ch4`) |
+| `k9ch` | 바로 claudharmony |
+| `:ns` → `prd` | 네임스페이스 |
+| `:deploy` `:pod` `:svc` `:httproute` | 리소스 |
+| 파드에서 `l` / `s` | 로그 / 셸 |
+| `0` | 전체 네임스페이스 |
 
 ## 처음부터 구성 (새 Mac / 재구축)
 
@@ -51,7 +67,7 @@ scripts/setup-runner.sh            # GitHub Actions self-hosted runner 등록
 | 적용 | `scripts/infra.sh dev apply` |
 | 상태 | `scripts/infra.sh dev status` / `cluster status` / `gateway status` |
 | 로그 | `scripts/infra.sh dev logs hello-app` / `logs tunnel` |
-| 외부 주소 | `scripts/infra.sh prd url` |
+| 외부 주소 | `scripts/infra.sh prd url` → https://claudharmony.io |
 | 접속 점검 | `scripts/infra.sh prd check` |
 | 현재 배포 버전 | `curl http://localhost/version` , `curl http://dev.localhost/version` |
 | Pod 안 들어가기 | `kubectl -n dev exec -it deploy/hello-app -- bash` |
@@ -88,7 +104,7 @@ scripts/setup-runner.sh            # GitHub Actions self-hosted runner 등록
 | Pod `CrashLoopBackOff` | `kubectl -n dev logs deploy/hello-app --previous` |
 | Pod `Running` 인데 `0/1` | readiness probe 실패 → `kubectl -n dev describe pod -l app.kubernetes.io/name=hello-app` 의 Events |
 | `OOMKilled` | `memory_mb` 증가 (서비스 카탈로그) |
-| 터널 주소 접속 안 됨 | `scripts/infra.sh prd logs tunnel` — `Registered tunnel connection` 이 있어야 함. 주소가 바뀌었는지 `url` 로 재확인 |
+| 도메인 접속 안 됨 | `kubectl -n edge get pods` (cloudflared 2/2 Ready?), `kubectl -n edge logs deploy/cloudflared` 에 `Registered tunnel connection` 4개, `scripts/infra.sh edge plan` 으로 드리프트 확인 |
 | terraform `context "kind-claudharmony" does not exist` | 클러스터가 없음 → `scripts/infra.sh cluster apply` 부터 |
 | Docker Desktop 재시작 후 | kind 노드 컨테이너는 자동 재시작됨. 터널 주소는 바뀜 |
 | 메모리 부족 (Pending Pod) | `kubectl describe pod` → `Insufficient memory`. Docker Desktop 메모리 늘리거나 다른 클러스터(`ch4`) 정리 |

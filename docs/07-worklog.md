@@ -28,6 +28,8 @@
 | 15 | api / web 러너 등록 | ✅ (사용자 실행, 러너 4개 online) |
 | 16 | dev 에 api → web 배포, hello-app 제거 | ✅ dev `/` = web `dev-05aa8f3` |
 | 17 | prd 에 api → web 배포, hello-app 제거 | ✅ prd `/` = web `20261024-05aa8f3` |
+| 18 | 도메인 claudharmony.io 연결 (Named Tunnel) | ✅ apex/www → prd, dev. → dev |
+| 19 | k9s / KUBECONFIG 정리 | ✅ |
 
 ---
 
@@ -271,6 +273,47 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
    - prd 리소스: Deployment `api`, `tunnel`, `web` / HTTPRoute `web`
 
 **남은 것**: 각 저장소 `release/20261024` → `main` merge, `main` → `develop` back-merge / claudharmony-homepage archive
+
+### 22. 터널 순간 끊김 조사
+
+- 사용자: "갑자기 안 나온다" → 로컬/외부 모두 200, 에셋·SSR 정상
+- `kubectl logs deploy/tunnel` 에서 15:44 KST prd·dev 터널 **동시에** `QUIC ... timeout: no recent network activity` → 1초 내 재연결
+- 같은 시각 러너도 브로커 연결 끊김 → **사무실 회선 순간 단절**로 판단
+- 대책: 고정 도메인 + named tunnel 커넥터 이중화 (#23)
+
+### 23. 도메인 claudharmony.io 연결
+
+1. 도메인: **Cloudflare Registrar** 에서 `claudharmony.io` 구매 (네임서버 자동, WHOIS 비공개)
+2. `platform/edge` 스택 작성 — cloudflare provider `~> 5.27.0` (5.28.1 은 4일 된 버전이라 제외), `terraform providers schema -json` 으로 v5 리소스 속성 확인 후 작성
+3. `infra.sh`: `edge` 스택 추가, 이 스택만 `~/.claudharmony/cloudflare.env` 로드
+4. 토큰 발급 (계정 API 토큰) — 사용자와 화면 보며 진행
+
+**문제 1**: 터널 생성 `10000 Authentication error`, 그러나 터널 목록/zone/DNS 조회는 성공
+- 빈 body POST 로 판별 → 여전히 10000 = 권한 문제
+- 추가 단서: `access/apps` → `access.api.error.not_enabled` → **Zero Trust 미개설**
+- 사용자가 Zero Trust(Free) 활성화 → Access 는 정상화, 터널 생성은 여전히 10000
+
+**문제 2**: 토큰에 터널 쓰기 권한 없음
+- UI 에서 "Cloudflare Tunnel" 검색 시 **Argo Tunnel (Legacy)** 만 보임 → 이것만으론 부족
+- 정책 카운터가 `0/72` → 앞서 체크한 권한이 저장되지 않았던 것도 확인
+- **Cloudflare One Connector: cloudflared — Edit** (+ Connectors, Access, Argo Legacy) 추가·저장 → 빈 body POST 가 `1030 missing field name` = 권한 통과
+
+5. `edge apply` → 터널, ingress 설정, DNS 3, Secret, cloudflared × 2 생성
+   - 커넥터 로그: `Registered tunnel connection` ×4 (icn01/05/06 — 서울 엣지)
+6. `envs/dev` HTTPRoute hostnames 에 `dev.claudharmony.io` 추가
+7. 검증: `https://claudharmony.io`·`www` → prd `20261024-05aa8f3`, `dev.` → dev, 인증서 Let's Encrypt (Cloudflare 자동), 외부(BG/IN) 200
+8. **임시 quick tunnel 제거** (`enable_tunnel = false`) — dev 는 main 머지로 자동, prd 는 수동 apply
+9. `infra.sh url/check` → 도메인 기준으로
+
+**배운 점**
+- Cloudflare 권한 이름은 자주 바뀐다 → API 오류 문서 링크(`documentation_url`)와 실제 호출로 판별
+- 인증 vs 입력 오류를 빈 body POST 로 구분
+- 터널 하나에 모든 호스트 → Gateway 로, 환경 구분은 HTTPRoute 에서: 라우팅 규칙이 한 곳(K8s)에 모임
+
+### 24. k9s 에서 클러스터가 안 보이던 문제
+
+**원인**: `~/.zshrc` 의 `KUBECONFIG` 가 lima k3s 파일 하나만 가리킴 (컨텍스트 0개). 우리 클러스터는 전용 `~/.claudharmony/kubeconfig`
+**해결**: `KUBECONFIG` 를 3개 파일 합치기 + `k9ch`/`kch` alias (백업 `~/.zshrc.bak-20261024`) → `kubectl config get-contexts` 에 `kind-claudharmony`, `kind-ch4` 표시
 
 ---
 

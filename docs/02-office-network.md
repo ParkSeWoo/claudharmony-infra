@@ -53,7 +53,11 @@ flowchart TB
 
 외부 80 은 GNT2400 관리페이지가 점유 중이라 8888 사용. GNT2400 의 원격 관리는 끄는 것을 권장.
 
-### 현재 외부 공개 방식: Cloudflare Quick Tunnel (2026-10-24 ~)
+### 현재 외부 공개 방식: 도메인 + Cloudflare Named Tunnel (2026-10-24 ~)
+
+`claudharmony.io` / `www` → prd, `dev.claudharmony.io` → dev. 상세는 [도메인 연결](08-domain.md).
+
+### (이전) Cloudflare Quick Tunnel — 도메인 연결 후 제거
 
 GNT2400 관리자 계정이 없어 포트포워딩 불가 → 터널로 공개 중.
 

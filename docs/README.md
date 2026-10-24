@@ -9,6 +9,7 @@
 | 05 | [Kubernetes 학습 가이드](05-kubernetes-guide.md) | 우리 클러스터로 배우는 K8s — 개념 · 코드 위치 · 실습 명령 |
 | 06 | [CI/CD](06-cicd.md) | 브랜치 전략(develop→dev, release→prd), 파이프라인, 러너 |
 | 07 | [작업 기록](07-worklog.md) | 단계별 작업 · 문제 · 원인 · 해결 |
+| 08 | [도메인 연결](08-domain.md) | claudharmony.io + Cloudflare Tunnel — 설정 순서, 토큰 권한, 트러블슈팅 |
 
 브라우저로 보기: [`index.html`](index.html) — `python3 scripts/build_docs.py` 로 생성
 Obsidian 동기화: `python3 scripts/sync_obsidian.py`

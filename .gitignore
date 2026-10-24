@@ -1,0 +1,17 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!*.tfvars.example
+.terraform.tfstate.lock.info
+
+# Gradle / Java
+app/build/
+app/.gradle/
+
+# OS / IDE
+.DS_Store
+.idea/
+*.iml

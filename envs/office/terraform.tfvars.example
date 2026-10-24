@@ -1,0 +1,4 @@
+# cp terraform.tfvars.example terraform.tfvars
+environment = "office"
+public_port = 80
+server_name = "_" # 도메인 구매 후: "claudharmony.com"

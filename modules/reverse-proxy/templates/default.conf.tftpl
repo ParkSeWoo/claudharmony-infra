@@ -1,0 +1,27 @@
+# Terraform 이 생성한 파일입니다. 직접 수정하지 마세요. (modules/reverse-proxy)
+
+# Docker 내장 DNS — 앱 컨테이너가 재생성되어 IP 가 바뀌어도 따라간다
+resolver 127.0.0.11 valid=10s ipv6=off;
+
+server {
+    listen 80 default_server;
+    server_name ${server_name};
+
+    location = /nginx-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+%{ for r in routes }
+    location ${r.path} {
+        set $upstream ${r.upstream};
+        proxy_pass         http://$upstream;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout    60s;
+    }
+%{ endfor ~}
+}

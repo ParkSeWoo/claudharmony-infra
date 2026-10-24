@@ -234,22 +234,24 @@ scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
 1. 각 서비스 개발자 콘솔에서 OAuth 앱을 만들고, redirect URI 두 개를 등록합니다:
    - `https://auth.claudharmony.io/realms/claudharmony/broker/<alias>/endpoint`
    - `https://auth.claudharmony.io/realms/claudharmony-dev/broker/<alias>/endpoint`
-   - `<alias>` = `google` | `github` | `kakao`
+   - `<alias>` = `google` | `github` | `kakao` | `naver`
 2. Mac에 `~/.claudharmony/identity.env`(chmod 600, 저장소 밖)를 만듭니다:
    ```bash
    GOOGLE_CLIENT_ID=...
    GOOGLE_CLIENT_SECRET=...
    KAKAO_CLIENT_ID=...        # 카카오: REST API 키, 보안 → Client Secret, 카카오 로그인 → OpenID Connect 활성화
    KAKAO_CLIENT_SECRET=...
+   NAVER_CLIENT_ID=...        # 네이버 개발자센터 → 애플리케이션 등록 (네이버 로그인), Callback URL 위 두 개
+   NAVER_CLIENT_SECRET=...
    ```
 3. `scripts/infra.sh realms apply` — 값이 있는 것만 생깁니다(`social.tf`).
 
 | 서비스 | 방식 | 상태 |
 |--------|------|------|
 | Google | Keycloak 내장 | 키 대기 |
-| GitHub | Keycloak 내장 (`provider_id = github`) | 키 대기 |
+| GitHub | Keycloak 내장 (`keycloak_oidc_github_identity_provider`) | 키 대기 |
 | 카카오 | 표준 OIDC (`kauth.kakao.com`) | 키 대기 |
-| 네이버 | OIDC 미지원 → Keycloak 확장(jar) 필요 | 보류 |
+| 네이버 | OIDC 미지원 → Keycloak 기본 **OAuth 2.0** 공급자(`provider_id = oauth2`), 사용자 정보는 `response.id/email/name` (앱 세션 제공 설정). alias `naver` 고정 — 테마 버튼 색 | 키 대기 |
 
 ## 8. 막혔던 곳
 

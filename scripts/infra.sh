@@ -45,12 +45,12 @@ if [ "$ENV_NAME" = realms ] && [[ "${2:-plan}" =~ ^(plan|apply|destroy)$ ]]; the
   export TF_VAR_keycloak_url="http://127.0.0.1:$KC_PORT"
   TF_VAR_keycloak_client_secret="$(k -n identity get secret keycloak-bootstrap -o jsonpath='{.data.client-secret}' | base64 -d)"
   export TF_VAR_keycloak_client_secret
-  # 소셜 로그인 키 (저장소 밖, chmod 600) — GOOGLE_/GITHUB_/KAKAO_ CLIENT_ID·CLIENT_SECRET. 없으면 소셜 로그인 없음
+  # 소셜 로그인 키 (저장소 밖, chmod 600) — GOOGLE_/GITHUB_/KAKAO_/NAVER_ CLIENT_ID·CLIENT_SECRET. 없으면 소셜 로그인 없음
   ID_ENV="$HOME/.claudharmony/identity.env"
   if [ -r "$ID_ENV" ]; then set -a; . "$ID_ENV"; set +a; fi
   TF_VAR_social="$(python3 -c 'import json,os
 print(json.dumps({n:{"client_id":os.environ[f"{n.upper()}_CLIENT_ID"],"client_secret":os.environ.get(f"{n.upper()}_CLIENT_SECRET","")}
-  for n in ("google","github","kakao") if os.environ.get(f"{n.upper()}_CLIENT_ID")}))')"
+  for n in ("google","github","kakao","naver") if os.environ.get(f"{n.upper()}_CLIENT_ID")}))')"
   export TF_VAR_social
 fi
 STATE_DIR="${CLAUDHARMONY_STATE_DIR:-$HOME/.claudharmony/state}"

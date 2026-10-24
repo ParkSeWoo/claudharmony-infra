@@ -542,6 +542,17 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **배운 점**: 프록시가 여러 겹(Cloudflare → cloudflared → Envoy)이면 "원래 https였다"는 정보가 중간에 사라질 수 있다. 앱이 http/https를 판단하는 곳(Keycloak, SvelteKit ORIGIN, Spring `forward-headers-strategy`)은 하나씩 확인할 것. Terraform의 "목록 전체를 지정하는" 리소스(default_roles)는 기본값을 덮어쓴다.
 
 ---
+### 44. 배포 실패 수정(db-schema 임시 DB) + 네이버 로그인
+
+- api Deploy dev 실패: `db-schema.sh`가 Docker 재시작으로 꺼진 Atlas 임시 DB를 다시 만들 때 `duplicate key ... extname=postgis`
+  - 원인: 초기화 중 소켓 전용 임시 서버에 `pg_isready`가 먼저 성공 → 이미지의 postgis 생성 스크립트와 `CREATE EXTENSION`이 겹침
+  - 해결: `pg_isready -h 127.0.0.1`(TCP = 초기화 끝난 진짜 서버)로 대기. 컨테이너를 지우고 dev check로 재현 확인 → 실패한 배포 재실행
+- 앱 세션 제공 설정으로 네이버 로그인 추가: Keycloak 기본 OAuth 2.0 공급자(`provider_id = oauth2`), `response.*` claim, alias `naver`
+- GitHub는 provider 전용 리소스 `keycloak_oidc_github_identity_provider`로 교체
+- 가짜 키로 plan만: 4종 × 2 realm = 8개 생성 예정. 실제 키가 없으면 변경 없음
+- 앱 세션: 블로그 img CSS dev 배포(web #15), claudharmony-keycloak 테마(카드형·네이버 버튼) develop 머지
+
+---
 
 ## 템플릿 (다음 작업용)
 

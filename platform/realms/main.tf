@@ -76,8 +76,8 @@ resource "keycloak_role" "admin" {
 }
 
 resource "keycloak_default_roles" "this" {
-  for_each      = var.realms
-  realm_id      = keycloak_realm.this[each.key].id
+  for_each = var.realms
+  realm_id = keycloak_realm.this[each.key].id
   # Keycloak 기본값(account 화면용 역할 포함)을 유지하고 user 만 더한다.
   # account/* 를 빼면 토큰에 aud=account·권한이 없어 계정 화면 API 가 401
   default_roles = ["offline_access", "uma_authorization", "account/view-profile", "account/manage-account", keycloak_role.user[each.key].name]

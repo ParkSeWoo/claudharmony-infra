@@ -608,6 +608,7 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
   2. `git fetch` 후 배포 기록이 `origin/main`과 다르면 **거부** ("git pull --rebase 후 다시")
   - `deploy.sh`는 이미 잠금을 잡고 기록을 갱신한 뒤 부르므로 `CLAUDHARMONY_DEPLOY_LOCKED=1`로 건너뜀
   - 시험: 정상 → 적용·잠금 해제, 3커밋 뒤처진 복제본 → 거부
+- **사용자 확인**: prd realm `admin`으로 첫 로그인 → 비밀번호 변경 → 콘솔 대시보드 진입 ✅ (admin 역할 경로 끝까지 확인)
 - 앱 세션: 홈페이지 '관리자' 링크(web #18, admin 역할일 때만, prd → console.claudharmony.io), dev에서 tester 로그인 → /me → 로그아웃 확인. prd는 사용자 승인 후 release
 
 **배운 점**: "apply 전에 pull"은 사람이 기억하는 규칙이 아니라 스크립트가 강제해야 한다. 같은 state를 여러 곳(러너·세션)이 바꾸면 잠금과 기록 확인이 함께 필요하다.

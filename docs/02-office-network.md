@@ -53,6 +53,22 @@ flowchart TB
 
 외부 80 은 GNT2400 관리페이지가 점유 중이라 8888 사용. GNT2400 의 원격 관리는 끄는 것을 권장.
 
+### 현재 외부 공개 방식: Cloudflare Quick Tunnel (2026-10-24 ~)
+
+GNT2400 관리자 계정이 없어 포트포워딩 불가 → 터널로 공개 중.
+
+```
+외부 → https://<랜덤>.trycloudflare.com → Cloudflare → tunnel 컨테이너 → nginx:80 → hello-app
+```
+
+| 항목 | 내용 |
+|------|------|
+| 컨테이너 | `tunnel` (`cloudflare/cloudflared:2025.10.0`, `--restart unless-stopped`, 네트워크 `claudharmony-office`) |
+| 현재 주소 확인 | `scripts/infra.sh url` |
+| 주의 | 컨테이너 재시작 시 **주소가 바뀜**. 주소를 아는 누구나 접속 가능 |
+| 관리 | 현재 `docker run` 으로 수동 기동 (Terraform 미관리). `modules/tunnel` 은 준비됨 → `envs/office/main.tf` 에 연결 예정 |
+| 고정 주소 | 도메인 구매 → Cloudflare named tunnel 로 전환 |
+
 ### 상위 공유기 권한이 없을 때
 
 Cloudflare Tunnel (`cloudflared tunnel --url http://localhost:80`) — Mac 에서 바깥으로 연결하므로 NAT 단수·포트포워딩과 무관.

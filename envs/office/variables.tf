@@ -28,11 +28,17 @@ variable "services" {
     key = 서비스 이름(컨테이너/내부 DNS 이름)
   EOT
   type = map(object({
-    source_dir  = string                # infra 루트 기준 상대 경로 (예: apps/hello)
+    source_dir  = string # infra 루트 기준 상대 경로 (예: apps/hello)
     port        = optional(number, 8080)
-    route_path  = optional(string)      # nginx location. null 이면 외부 비공개
+    route_path  = optional(string) # nginx location. null 이면 외부 비공개
     health_path = optional(string, "/actuator/health")
     memory_mb   = optional(number, 512)
     env         = optional(map(string), {})
   }))
+}
+
+variable "enable_tunnel" {
+  description = "Cloudflare Quick Tunnel 로 외부 공개 (이중 NAT 로 포트포워딩 불가)"
+  type        = bool
+  default     = true
 }

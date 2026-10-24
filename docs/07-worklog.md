@@ -553,6 +553,13 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 앱 세션: 블로그 img CSS dev 배포(web #15), claudharmony-keycloak 테마(카드형·네이버 버튼) develop 머지
 
 ---
+### 45. claudharmony-keycloak 러너 등록
+
+- 사용자 실행: `scripts/setup-runner.sh claudharmony-keycloak` → `office-mac-claudharmony-keycloak` **online** (라벨 `claudharmony-office`). 등록 직후 출력은 offline이었지만 수 초 뒤 online
+- `setup-runner.sh` 기본 대상에 keycloak 추가
+- 다음: 앱 세션이 main 배포 workflow(`deploy.sh identity keycloak`)로 첫 테마 이미지 배포 → dev realm `login_theme = "claudharmony"`
+
+---
 
 ## 템플릿 (다음 작업용)
 

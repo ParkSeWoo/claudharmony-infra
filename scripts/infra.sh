@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 사용법: scripts/infra.sh <stack> <command>
-#   stack  : cluster | gateway | edge | dev | prd
-#            (cluster/gateway/edge = platform/*, dev/prd = envs/*)
+#   stack  : cluster | gateway | edge | addons | dev | prd
+#            (cluster/gateway/edge/addons = platform/*, dev/prd = envs/*)
 #   command: init | plan | apply | destroy | status | logs <svc> | url | check
 #   예) scripts/infra.sh cluster apply     # 1단계: kind 클러스터
 #       scripts/infra.sh gateway apply     # 2단계: Envoy Gateway
@@ -12,10 +12,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_NAME="${1:?stack 필요: cluster | gateway | edge | dev | prd}"
+ENV_NAME="${1:?stack 필요: cluster | gateway | edge | addons | dev | prd}"
 CMD="${2:-plan}"
 case "$ENV_NAME" in
-  cluster|gateway|edge) TF_DIR="$ROOT/platform/$ENV_NAME" ;;
+  cluster|gateway|edge|addons) TF_DIR="$ROOT/platform/$ENV_NAME" ;;
   *)               TF_DIR="$ROOT/envs/$ENV_NAME" ;;
 esac
 export KUBECONFIG="${KUBECONFIG_CLAUDHARMONY:-$HOME/.claudharmony/kubeconfig}"
@@ -51,6 +51,7 @@ case "$CMD" in
       cluster) kind get clusters; k get nodes -o wide ;;
       gateway) k get gatewayclass,gateway -A; k -n envoy-gateway-system get pods,svc ;;
       edge)    k -n edge get deploy,pods ;;
+      addons)  k -n kube-system get deploy metrics-server; k top nodes ;;
       *)       k -n "$ENV_NAME" get deploy,pods,svc,httproute ;;
     esac
     ;;

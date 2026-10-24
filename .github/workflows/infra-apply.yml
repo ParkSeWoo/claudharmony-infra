@@ -20,7 +20,7 @@ on:
       stack:
         description: "적용할 스택"
         type: choice
-        options: [dev, prd, gateway, edge, cluster]
+        options: [dev, prd, gateway, edge, addons, cluster]
         default: dev
 
 jobs:

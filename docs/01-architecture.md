@@ -55,6 +55,7 @@ flowchart LR
 |------|----------|-----------|-------------|------|
 | 1 | `platform/cluster` | kind 클러스터 (노드 2대) | 거의 안 바뀜 | 수동 |
 | 2 | `platform/gateway` | Envoy Gateway, GatewayClass, Gateway | 가끔 | main 머지 시 자동 |
+| 2.6 | `platform/addons` | metrics-server (k9s CPU/MEM, `kubectl top`, 이후 HPA) | 가끔 | 수동 |
 | 2.5 | `platform/edge` | Cloudflare 터널·DNS(claudharmony.io) + cloudflared × 2 (ns `edge`) | 거의 안 바뀜 | 수동 |
 | 3 | `envs/dev`, `envs/prd` | Namespace, Deployment, Service, HTTPRoute, 터널 | 배포마다 | dev 자동 / prd 수동 |
 

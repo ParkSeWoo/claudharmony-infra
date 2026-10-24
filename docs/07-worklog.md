@@ -329,6 +329,19 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 셸 환경과 무관하게 보이도록 `~/.kube/config` 에 `kind-claudharmony` 병합 + 기본 컨텍스트 지정 (백업 `~/.kube/config.bak-20261024`)
 - 주의: 클러스터 재생성 시 다시 병합 필요 (03 운영 가이드)
 
+### 27. k9s "아무것도 안 보임" 해결 + metrics-server
+
+**증상**: k9s 컨텍스트 0개 → (설정 재로드 후) 연결은 됐는데 화면이 빈 것처럼 보임
+**원인 (k9s 로그 `~/Library/Application Support/k9s/k9s.log`)**
+1. 17:18 `invalid context specified: ""` — 예전 터미널 환경
+2. 17:19~ `No resources found for v1/pods in "default"` — **연결은 됐고 비어 있는 `default` 네임스페이스를 보고 있었음**
+**해결**
+- k9s 컨텍스트 설정(`clusters/kind-claudharmony/kind-claudharmony/config.yaml`): 기본 네임스페이스 `all`, 즐겨찾기 `all, prd, dev, edge, envoy-gateway-system` (숫자키 0~4)
+- `platform/addons` 스택 신설 → **metrics-server** (Helm 3.14.0, kind 용 `--kubelet-insecure-tls`) → `kubectl top nodes` / k9s CPU·MEM 표시
+- `infra.sh addons`, Infra apply 수동 옵션에 `addons` 추가
+
+**배운 점**: k9s 가 "안 보이면" 먼저 로그 — 연결 실패와 빈 네임스페이스를 구분
+
 ---
 
 ## 템플릿 (다음 작업용)

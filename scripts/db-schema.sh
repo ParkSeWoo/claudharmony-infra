@@ -37,8 +37,10 @@ if [ "$(docker inspect -f '{{.State.Running}}' "$SCRATCH" 2>/dev/null)" != "true
   docker rm -f "$SCRATCH" >/dev/null 2>&1 || true
   docker run -d --name "$SCRATCH" --network "$NET" -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=dev \
     --label claudharmony.purpose=atlas-dev-db "$SCRATCH_IMAGE" >/dev/null
-  for _ in $(seq 1 30); do docker exec "$SCRATCH" pg_isready -U postgres -d dev >/dev/null 2>&1 && break; sleep 1; done
-  docker exec "$SCRATCH" psql -U postgres -d dev -qc 'CREATE EXTENSION IF NOT EXISTS postgis' >/dev/null
+  # 초기화(initdb + 이미지의 postgis 생성 스크립트) 중에는 소켓 전용 임시 서버가 떠서 pg_isready 가 먼저 성공한다.
+  # TCP(-h 127.0.0.1) 로 확인해야 초기화가 끝난 진짜 서버 — 아니면 postgis 생성이 초기화 스크립트와 겹쳐 duplicate key
+  for _ in $(seq 1 60); do docker exec "$SCRATCH" pg_isready -h 127.0.0.1 -U postgres -d dev >/dev/null 2>&1 && break; sleep 1; done
+  docker exec "$SCRATCH" psql -h 127.0.0.1 -U postgres -d dev -qc 'CREATE EXTENSION IF NOT EXISTS postgis' >/dev/null
 fi
 DEV_URL="postgres://postgres:dev@$SCRATCH:5432/dev?sslmode=disable&search_path=public"
 

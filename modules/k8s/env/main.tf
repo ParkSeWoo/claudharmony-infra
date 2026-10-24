@@ -55,7 +55,7 @@ module "service" {
   replicas        = each.value.replicas
   memory_mb       = each.value.memory_mb
   env             = merge({ APP_ENV = var.environment }, each.value.database ? local.db_env : {}, each.value.env)
-  secret_env      = each.value.database ? local.db_secret_env : {}
+  secret_env      = merge(each.value.database ? local.db_secret_env : {}, each.value.secret_env)
   service_account = each.value.service_account
   gateway         = var.gateway
   route           = each.value.route_path == null ? null : { path = each.value.route_path, hostnames = var.hostnames }

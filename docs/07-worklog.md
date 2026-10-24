@@ -567,6 +567,19 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 화면 확인: 휴대폰 폭(400px)은 정상. **데스크톱 폭에서 카드가 왼쪽에 붙음**(x≈20px, 아래 링크만 가운데) → 앱 세션에 수정 요청. prd realm은 수정 후 켬
 
 ---
+### 47. 테마 prd 적용 + web·api에 Keycloak 환경변수 연결
+
+- 앱 세션이 카드 정렬 수정 이미지 `claudharmony/keycloak:20261024-b007757` 배포. 확인 결과 1440px에서 카드 x=492(가운데), 모바일 정상
+  - 앱 세션 참고: Cloudflare가 `/resources/...`를 30일 캐시해서 옛 CSS가 남아 있었음 → 테마가 CSS 주소에 `?v=<이미지버전>`을 붙이도록 수정
+- prd realm `login_theme = "claudharmony"` → apply
+- 서비스 카탈로그에 `secret_env` 추가 (`modules/k8s/env`: DB Secret env와 merge)
+  - api ← `keycloak-api`: `KEYCLOAK_ISSUER_URI`, `KEYCLOAK_JWK_SET_URI`, `KEYCLOAK_AUDIENCE`
+  - web ← `keycloak-web`: `KEYCLOAK_ISSUER_URI`, `KEYCLOAK_INTERNAL_URI`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`
+  - plan: dev·prd 각각 Deployment 2개 변경만. 이미지 그대로, 빠지는 env 없음 (diff가 크게 보이는 건 env 목록이 이름순으로 다시 정렬되기 때문)
+- dev apply → rollout 정상, Pod 안 env 확인, dev 200
+- **prd apply는 자동 권한 검사가 운영 배포로 분류해 거부** → 사용자 실행 대기 (다음 prd 앱 배포 때도 함께 반영됨)
+
+---
 
 ## 템플릿 (다음 작업용)
 

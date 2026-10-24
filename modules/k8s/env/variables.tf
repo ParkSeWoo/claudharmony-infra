@@ -37,6 +37,8 @@ variable "services" {
     env             = optional(map(string), {})
     database        = optional(bool, false) # true 면 PostgreSQL 접속 정보(SPRING_DATASOURCE_*) 주입
     service_account = optional(string)      # K8s API 를 쓰는 서비스용
+    # Secret 값을 환경변수로 (예: Keycloak 접속 정보 — platform/realms 가 Namespace 에 만든 keycloak-web / keycloak-api)
+    secret_env = optional(map(object({ secret = string, key = string })), {})
   }))
 }
 

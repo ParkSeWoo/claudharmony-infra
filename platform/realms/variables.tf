@@ -46,6 +46,7 @@ variable "realms" {
       web_urls     = ["https://claudharmony.io", "https://www.claudharmony.io", "http://localhost"]
       console_urls = ["https://console.claudharmony.io", "http://console.localhost"]
       test_user    = false
+      login_theme  = "claudharmony"
     }
     dev = {
       realm        = "claudharmony-dev"
@@ -53,7 +54,7 @@ variable "realms" {
       web_urls     = ["https://dev.claudharmony.io", "http://dev.localhost", "http://localhost:5173"]
       console_urls = []
       test_user    = true
-      login_theme  = "claudharmony" # claudharmony-keycloak 이미지 (dev 먼저 확인)
+      login_theme  = "claudharmony" # claudharmony-keycloak 이미지
     }
   }
 }

@@ -227,7 +227,14 @@ scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
     jwk-set-uri: ${KEYCLOAK_JWK_SET_URI}   # 키는 클러스터 안에서
     audiences: ${KEYCLOAK_AUDIENCE}
   ```
-- 서비스 카탈로그(`services.auto.tfvars.json`)의 `secret_env`로 Deployment에 연결합니다. 앱이 준비되면 앱 세션과 맞춥니다.
+- 서비스 카탈로그(`services.auto.tfvars.json`)의 `secret_env`로 Deployment에 연결합니다 (2026-10-25 연결):
+  ```json
+  "web": { "secret_env": { "KEYCLOAK_CLIENT_SECRET": { "secret": "keycloak-web", "key": "client-secret" }, ... } }
+  ```
+  | 서비스 | 환경변수 ← Secret 키 |
+  |---|---|
+  | api | `KEYCLOAK_ISSUER_URI` ← issuer-uri, `KEYCLOAK_JWK_SET_URI` ← jwk-set-uri, `KEYCLOAK_AUDIENCE` ← audience |
+  | web | `KEYCLOAK_ISSUER_URI` ← issuer-uri, `KEYCLOAK_INTERNAL_URI` ← internal-uri, `KEYCLOAK_CLIENT_ID` ← client-id, `KEYCLOAK_CLIENT_SECRET` ← client-secret |
 
 ## 7. 소셜 로그인 추가
 
@@ -275,4 +282,4 @@ scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
 - [ ] 앱 연동 (앱 세션): web 로그인, api JWT 검증, console `admin` 역할 → Cloudflare Access 대신 Keycloak으로 콘솔 보호
 - [ ] SMTP (비밀번호 재설정·이메일 인증)
 - [ ] bootstrap client를 영구 `terraform` 서비스 계정으로 교체
-- [~] 로그인 화면 테마 — 이미지 `20261024-39bdf59` 배포, dev realm 적용. 데스크톱 카드 정렬 수정 후 prd
+- [x] 로그인 화면 테마 — 이미지 `20261024-b007757`, dev·prd realm 적용 (Cloudflare가 `/resources/`를 30일 캐시 → 테마는 CSS에 `?v=` 버전)

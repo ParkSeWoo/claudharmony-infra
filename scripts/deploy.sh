@@ -13,6 +13,19 @@ IMAGE="${3:?이미지 필요}"
 IMAGES_FILE="$ROOT/envs/$ENV_NAME/images.auto.tfvars.json"
 
 docker image inspect "$IMAGE" >/dev/null || { echo "이미지 없음: $IMAGE"; exit 1; }
+
+# 배포 직렬화: 여러 저장소(api, web ...)의 러너가 같은 infra 클론/state 를 동시에 쓰지 않도록
+# (macOS 에는 flock 이 없어 mkdir 의 원자성으로 잠금. 최대 10분 대기)
+LOCK="$HOME/.claudharmony/deploy.lock"
+GOT_LOCK=0
+for i in $(seq 1 120); do
+  if mkdir "$LOCK" 2>/dev/null; then GOT_LOCK=1; break; fi
+  [ "$i" = 1 ] && echo "다른 배포 진행 중 — 대기: $(cat "$LOCK/owner" 2>/dev/null)"
+  sleep 5
+done
+[ "$GOT_LOCK" = 1 ] || { echo "::error::배포 잠금 대기 시간 초과 ($LOCK) — 멈춘 배포가 없으면 디렉토리 삭제"; exit 1; }
+echo "$$ $ENV_NAME/$SERVICE $(date '+%F %T')" > "$LOCK/owner"
+trap 'rm -rf "$LOCK"' EXIT
 kind load docker-image "$IMAGE" --name "${KIND_CLUSTER:-claudharmony}"
 
 cd "$ROOT"

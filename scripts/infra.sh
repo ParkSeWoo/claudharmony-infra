@@ -32,8 +32,9 @@ approve_flag() { [ "${AUTO_APPROVE:-0}" = "1" ] && echo "-auto-approve" || true;
 
 case "$CMD" in
   init)    tf_init ;;
-  plan)    tf_init && tf plan -input=false ;;
-  apply)   tf_init && tf apply -input=false $(approve_flag) ;;
+  # 여러 서비스 배포가 겹치면 state lock 을 최대 10분 기다린다
+  plan)    tf_init && tf plan -input=false -lock-timeout=10m ;;
+  apply)   tf_init && tf apply -input=false -lock-timeout=10m $(approve_flag) ;;
   destroy) tf_init && tf destroy $(approve_flag) ;;
   status)
     case "$ENV_NAME" in

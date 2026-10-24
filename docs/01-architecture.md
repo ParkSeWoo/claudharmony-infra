@@ -58,6 +58,7 @@ flowchart LR
 | 2.7 | `platform/database` | CloudNativePG Operator (PostgreSQL 엔진) | 가끔 | 수동 |
 | 2.6 | `platform/addons` | metrics-server (k9s CPU/MEM, `kubectl top`, 이후 HPA) | 가끔 | 수동 |
 | 2.5 | `platform/edge` | Cloudflare 터널·DNS(claudharmony.io) + cloudflared × 2 (ns `edge`) | 거의 안 바뀜 | 수동 |
+| 3 | `envs/console` | 관리자 콘솔 (ns console, 읽기 전용 RBAC) | 배포마다 | main push |
 | 3 | `envs/dev`, `envs/prd` | Namespace, Deployment, Service, HTTPRoute, **PostgreSQL(pg)** | 배포마다 | dev 자동 / prd 수동 |
 
 각 단계는 **별도 Terraform state** (`~/.claudharmony/state/<stack>.tfstate`) 를 가진다.

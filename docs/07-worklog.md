@@ -368,6 +368,32 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 **남은 것**: 백업(Barman Cloud → R2), api 에 JPA/Flyway (다른 세션), Docker 메모리 증설
 
+### 30. 관리자 콘솔 1단계 (조회) — claudharmony-console
+
+목표: "AWS/GCP 처럼 관리자 페이지에서 시작·종료·확인" → **조회부터**, 별도 저장소
+1. 설계: 조회 = K8s API 읽기 / 변경(2단계) = 카탈로그 Git 커밋 → Terraform (단일 진실 원천 유지)
+2. 인프라: `envs/console` (환경 모듈 재사용) + ServiceAccount + **ClusterRole 읽기 전용(Secret 제외)**, app 모듈 `service_account`
+3. 앱: Spring Boot 4.1.2 / Java 25 (api 와 동일), fabric8 7.9.0 (8.0.0 은 1개월 된 메이저 → 7.x 최신), Thymeleaf + htmx 2.0.11
+   - 화면: 대시보드(노드·구성요소·외부 접속·환경 카드·배포 이력), 환경 상세(Pod·DB·라우트·경고), 로그
+   - 배포 이력: infra(public) 커밋 메시지 `deploy(env): svc=img:tag` 파싱
+   - `/env/nope` → 404 (설정된 환경만 조회)
+4. 로컬 실행(`KUBECONFIG`)으로 전 페이지 200 확인 → 이미지 빌드 → `deploy.sh console console …` → `http://console.localhost` 정상, RBAC 오류 없음
+5. 저장소 `claudharmony-console` (private, main) 생성·push
+
+**문제 1 — 공개 주소가 보호 없이 열림 (1분여)**
+- edge 에 `console.claudharmony.io` + Access 를 한 번에 apply → DNS·터널 설정은 성공, **Access 는 `auth.forbidden`** (토큰에 Access 쓰기 없음)
+- 그 순간 콘솔 호스트가 prd catch-all 로 공개 홈페이지를 보여줌 → **즉시 hostname 제거 apply** (530 확인)
+- 재발 방지: Access 성공 후 DNS 생성되도록 `depends_on`, 토큰 권한 추가 후 재적용
+- **배운 점**: 보호 장치가 필요한 공개는 "보호 먼저, 노출 나중" 순서를 코드로 강제
+
+**문제 2 — Google Java Style 적용 (사용자 요청)**
+- Spotless 8.9.0 + google-java-format 1.37.0 → 모든 파일 `InvocationTargetException`
+- `--add-exports` jvmargs 추가해도 동일, gjf jar 직접 실행은 정상 → **Spotless 보다 나중에 나온 gjf 1.37 과의 비호환**
+- gjf **1.36.1** 로 내려서 해결 (`gradle.properties` 의 add-exports 는 유지)
+- CI: PR 에 `spotlessCheck build`, 배포 워크플로도 `spotlessCheck` 선행
+
+**남은 것**: 토큰 Access 권한 → Access + 공개 주소 / console 저장소 러너 등록 / 2단계(제어)
+
 ---
 
 ## 템플릿 (다음 작업용)

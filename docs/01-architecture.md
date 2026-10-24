@@ -87,7 +87,19 @@ infra/
 └── docs/
 ```
 
-앱 코드는 별도 저장소 **claudharmony-homepage** (private) — [CI/CD 문서](06-cicd.md) 참고.
+앱 코드는 서비스별 별도 저장소 (private) — [CI/CD 문서](06-cicd.md) 참고.
+
+| 서비스 | 저장소 | 스택 | 노출 |
+|--------|--------|------|------|
+| `web` | claudharmony-web | SvelteKit 3 / Node 24, :3000 | 외부 `/` |
+| `api` | claudharmony-api | Spring Boot 4.1.2 / Java 25, :8080 | 내부 전용 (`http://api`) |
+| `hello-app` | claudharmony-homepage | Spring Boot 3.5 / Java 21 | 외부 `/` — web 전환 후 제거 |
+
+```mermaid
+flowchart LR
+    GW[Gateway] -->|HTTPRoute /| WEB[web<br/>SvelteKit SSR]
+    WEB -->|http://api<br/>같은 Namespace| API[api<br/>Spring Boot]
+```
 
 ## 클라우드 개념 매핑
 

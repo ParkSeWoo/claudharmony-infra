@@ -4,8 +4,12 @@
 
 | 저장소 | 공개 | 내용 | 기본 브랜치 |
 |--------|------|------|-------------|
-| [claudharmony-homepage](https://github.com/ParkSeWoo/claudharmony-homepage) | private | 앱 코드 (Spring Boot), 앱 배포 워크플로 | `develop` |
+| [claudharmony-web](https://github.com/ParkSeWoo/claudharmony-web) | private | 프론트 — SvelteKit 3 (Node 24), 외부 `/` | `main`* |
+| [claudharmony-api](https://github.com/ParkSeWoo/claudharmony-api) | private | 백엔드 — Spring Boot 4.1.2 / Java 25, 내부 전용 | `main`* |
+| [claudharmony-homepage](https://github.com/ParkSeWoo/claudharmony-homepage) | private | (구) hello-app — web/api 전환 후 archive 예정 | `develop` |
 | [claudharmony-infra](https://github.com/ParkSeWoo/claudharmony-infra) | public | Terraform (클러스터/게이트웨이/환경), 배포 기록, 문서 | `main` |
+
+\* web/api 는 2026-10-24 현재 `main` 만 push 된 상태 — `develop` push 부터 dev 배포가 시작된다.
 
 ## 앱 브랜치 전략
 
@@ -54,17 +58,31 @@ git checkout develop && git merge origin/main && git push      # back-merge
 
 ## 앱 ↔ 인프라 계약
 
-앱 저장소가 아래를 지키면 인프라 변경 없이 배포된다. 바꿔야 하면 infra 도 함께 수정.
+모든 서비스 공통 — 지키면 인프라 변경 없이 배포된다. 바꿔야 하면 infra 도 함께 수정.
 
 | # | 조건 | 인프라 쪽 위치 |
 |---|------|----------------|
 | 1 | 루트 `Dockerfile` 로 빌드, 빌드 인자 `APP_VERSION` | 앱 워크플로 `docker build` |
-| 2 | 컨테이너 포트 `8080` | `services.auto.tfvars.json` 의 `port` |
-| 3 | `/actuator/health/liveness`, `/actuator/health/readiness` 200 | `modules/k8s/app` probe |
-| 4 | `/actuator/**` 는 외부 비공개 (Gateway 에서 리다이렉트) | `modules/k8s/app` HTTPRoute |
-| 5 | 메모리 512Mi 이내 | `memory_mb` |
-| 6 | 서비스 이름 `hello-app`, 이미지 `claudharmony/hello-app` | 워크플로 + 카탈로그 key |
-| 7 | `GET /version` → `{env, version}` (배포 확인용) | 문서/점검 |
+| 2 | `/actuator/health/liveness`, `/actuator/health/readiness` 200 (**Node 앱도 같은 경로**) | `modules/k8s/app` probe |
+| 3 | `/actuator/**` 는 외부 비공개 (Gateway 에서 `/` 로 리다이렉트) | `modules/k8s/app` HTTPRoute |
+| 4 | `GET /version` → `{env, version}` (외부 노출 서비스) | 배포 확인 |
+| 5 | 워크플로는 `shell: bash`(pipefail) + 배포 전 infra 클론 `pull --ff-only` | 앱 `.github/workflows/deploy-*.yml` |
+| 6 | 서비스 이름 = 카탈로그 key = Deployment/Service 이름 = 내부 DNS | `envs/*/services.auto.tfvars.json` |
+
+### 서비스 카탈로그 (dev / prd 동일)
+
+| 서비스 | 이미지 | 포트 | 외부 경로 | 메모리 | 저장소 |
+|--------|--------|------|-----------|--------|--------|
+| `web` | `claudharmony/web` | 3000 | `/` | 256Mi | claudharmony-web |
+| `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api |
+| `hello-app` | `claudharmony/hello-app` | 8080 | `/` | 512Mi | claudharmony-homepage (전환 후 제거) |
+
+- **web → api** 는 SSR 서버 간 호출: 같은 Namespace 의 Service `api` (포트 80 → 8080) — `http://api`
+- **`/` 가 두 서비스(hello-app, web)에 겹치는 동안**: Gateway API 규칙상 **먼저 생성된 HTTPRoute 가 우선** → hello-app 이 계속 응답. web 확인 후 카탈로그에서 hello-app 을 제거하면 web 으로 넘어간다 (무중단 전환)
+
+### 동시 배포
+
+여러 저장소의 러너가 같은 infra 클론과 Terraform state 를 쓰므로 `deploy.sh` 가 `~/.claudharmony/deploy.lock` (mkdir 잠금)으로 **한 번에 하나씩** 처리하고, `terraform` 은 `-lock-timeout=10m` 으로 state 잠금을 기다린다.
 
 ## 이미지 태그 규칙
 
@@ -119,10 +137,10 @@ sequenceDiagram
 | 항목 | 값 |
 |------|----|
 | 위치 | `~/.claudharmony/runners/<repo>/` (저장소당 1개) |
-| 이름 | `office-mac-claudharmony-infra`, `office-mac-claudharmony-homepage` |
+| 이름 | `office-mac-<repo>` (infra, homepage, api, web) |
 | 라벨 | `self-hosted`, `claudharmony-office` |
 | 실행 방식 | launchd 서비스 (`svc.sh`) — 로그인 시 자동 시작 |
-| 등록 | `scripts/setup-runner.sh` |
+| 등록 | `scripts/setup-runner.sh [repo ...]` (인자 없으면 infra, homepage) |
 
 ```bash
 cd ~/.claudharmony/runners/claudharmony-homepage && ./svc.sh status

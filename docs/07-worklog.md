@@ -24,6 +24,9 @@
 | 11 | self-hosted runner 등록 | ✅ (사용자 실행) |
 | 12 | 파이프라인 E2E — dev | ✅ `dev-c0184f6` 자동 배포 |
 | 13 | 파이프라인 E2E — prd | ✅ `20261024-c0184f6` 수동 배포 + 기록 자동 커밋 |
+| 14 | web / api 분리 — 카탈로그·동시배포 잠금 | ✅ |
+| 15 | api / web 러너 등록 | ⏳ 사용자 실행 |
+| 16 | dev 에 api → web 배포, hello-app 제거 | ⏳ 러너 등록 후 (ai-root-78 이 develop push) |
 
 ---
 
@@ -204,6 +207,28 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 **남은 절차 (사용자)**: prd 확인 후 `release/20261024` → `main` PR merge, `main` → `develop` back-merge.
 (홈페이지 실제 릴리스는 다른 세션 작업이 develop 에 들어온 뒤 새 release 브랜치로)
+
+### 17. homepage 사이클 마무리 (사용자 요청)
+
+- PR #1 `release/20261024` → `main` merge (`c1b09bb`), `main` → `develop` back-merge (`45d45c0`, GitHub merges API)
+
+### 18. 홈페이지 → web / api 분리 (다른 세션 ai-root-78 요청)
+
+다른 세션이 홈페이지를 두 저장소로 분리하고 카탈로그 추가를 요청:
+- `claudharmony-web` — SvelteKit 3 (Node 24), :3000, `/`, probe 경로는 actuator 와 동일하게 맞춤, `/version` 제공
+- `claudharmony-api` — Spring Boot 4.1.2 / Java 25, :8080, 내부 전용
+- 두 저장소 워크플로에 #14 의 수정(pipefail, infra pull) 반영 확인 (`gh api .../contents`)
+
+작업:
+1. `envs/dev`, `envs/prd` 카탈로그에 `api`(내부), `web`(`/`, 256Mi) 추가 — 이미지가 없어 리소스는 아직 생성 안 됨 (`local.deployed` 필터)
+2. **동시 배포 대비**: 서비스가 여럿이면 러너들이 같은 infra 클론/state 를 동시에 씀
+   - `deploy.sh`: `mkdir` 기반 잠금 (`~/.claudharmony/deploy.lock`, 최대 10분 대기). macOS 에 `flock` 없음
+   - 첫 버전에 잠금 실패 시 남의 잠금을 지우는 버그 → 재작성, 가짜 스크립트 2개 동시 실행으로 **순차 처리 확인**
+   - `infra.sh`: `terraform plan/apply -lock-timeout=10m`
+3. push → **Infra apply 워크플로 첫 실전 실행**: changes 감지 → dev 만 실행 → `No changes` ✓
+4. 러너 등록(api, web)은 사용자 실행 필요: `scripts/setup-runner.sh claudharmony-api claudharmony-web`
+
+**배운 점**: Gateway API 에서 같은 경로의 HTTPRoute 가 겹치면 **생성 시각이 오래된 라우트가 우선** → 새 서비스를 먼저 띄우고 옛 라우트를 지우는 방식으로 무중단 전환 가능
 
 ---
 

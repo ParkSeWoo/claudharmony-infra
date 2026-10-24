@@ -34,6 +34,11 @@ alias kch='kubectl --kubeconfig ~/.claudharmony/kubeconfig --context kind-claudh
 
 예전에는 `KUBECONFIG` 가 lima k3s 파일 하나만 가리켜서 k9s 에 아무 클러스터도 안 보였다. 위처럼 합친 뒤:
 
+- 셸 설정과 무관하게 보이도록 `~/.kube/config` 에도 `kind-claudharmony` 를 합쳐 넣고 기본 컨텍스트로 지정 (백업 `~/.kube/config.bak-20261024`, 이전 기본은 `kind-ch4`)
+- ⚠️ `cluster apply` 로 클러스터를 **재생성하면** 인증서가 바뀐다 → 다시 합치기:
+  `KUBECONFIG=~/.kube/config:~/.claudharmony/kubeconfig kubectl config view --flatten > /tmp/k && mv /tmp/k ~/.kube/config`
+- 이미 열려 있던 터미널은 `source ~/.zshrc` 후 사용
+
 | 입력 | 동작 |
 |------|------|
 | `k9s` → `:ctx` | 클러스터 전환 (`kind-claudharmony`, `kind-ch4`) |

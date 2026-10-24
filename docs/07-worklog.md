@@ -323,6 +323,12 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 다른 세션 저장소라 **새 파일 하나만** API 로 develop 에 추가(`46aeb0b`) → Deploy dev 성공 → https://dev.claudharmony.io/blog/custom-domain-cloudflare-tunnel 200
 - prd 반영은 api release 브랜치로 (사용자 확인 후)
 
+### 26. k9s 기본 설정에도 클러스터 등록
+
+- 사용자: k9s 에 여전히 안 보임 → 새 zsh 에선 정상(`kind-claudharmony`), **수정 전에 열린 터미널**이 원인
+- 셸 환경과 무관하게 보이도록 `~/.kube/config` 에 `kind-claudharmony` 병합 + 기본 컨텍스트 지정 (백업 `~/.kube/config.bak-20261024`)
+- 주의: 클러스터 재생성 시 다시 병합 필요 (03 운영 가이드)
+
 ---
 
 ## 템플릿 (다음 작업용)

@@ -419,6 +419,18 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 남은 것: api 코드에서 Flyway 제거 + `ddl-auto=validate` (api 세션) → 이후 `flyway_schema_history` 정리
 
+### 34. Flyway 제거 (api 세션) + dev 정리
+
+- api 세션: Flyway 의존성·`V1__trend.sql` 삭제, JPA 가 아니라 `JdbcClient` 라 `ddl-auto` 대신 **기동 시 information_schema 검증**(없으면 기동 실패), Testcontainers 도 `db/schema.sql` 사용, 테스트 35개 통과 → dev `dev-93204f6`
+- 인프라: dev `flyway_schema_history` DROP → 남은 테이블 `trend_snapshot, trend_keyword, spatial_ref_sys`, Atlas `check` = 변경 없음
+- prd 는 아직 Flyway 포함 버전(`20261024-63e8dca`) → release → DB schema prd → Deploy prd 이후 prd 이력 테이블 정리 예정
+
+### 35. 구성도·가이드 문서 정리 (학습 기준)
+
+- `01-architecture` 전면 개편: 실제 클러스터 조사(ns·deploy·svc·route·pg·pvc·helm·state·저장소) 기반 — 시스템 컨텍스트, 물리/노드, Namespace 논리도, 요청 시퀀스, 배포 흐름, Terraform 스택 의존, 데이터, 보안 경계, 버전, 설계 결정
+- `11-learning-guide` 신규: 10단계 커리큘럼(개념 → 우리 구성 → 확인 명령 → 실습 → 체크리스트) + 장애 사례 복기 표 + 다음 과제
+- 실습은 dev·읽기 전용만 (prd 변경 명령 없음)
+
 ---
 
 ## 템플릿 (다음 작업용)

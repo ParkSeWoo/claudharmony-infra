@@ -73,7 +73,7 @@ api 에 `spring-boot-starter-data-jpa`(또는 jdbc) + `org.postgresql:postgresql
 | 적용 시점 | `develop` push → `deploy-dev` 의 **DB schema 단계에서 자동** (앱 배포 전) | **`DB schema prd` 워크플로 수동 실행** (release/* 브랜치) |
 | 안전장치 | — | ① 계획만 먼저 (confirm 비움) ② `confirm = "apply prd"` ③ 적용 직전 **pg_dump 백업** (`~/.claudharmony/backups/`) ④ 위험 변경(DROP·타입 변경)은 `allow_destructive` 필요 |
 | 앱 배포 | 스키마 적용 뒤 | **`deploy-prd` 가 `check` — 적용 안 된 변경이 있으면 배포 중단** → "스키마 먼저, 앱 나중" 강제 |
-| 앱의 역할 | 스키마 변경 안 함, JPA `ddl-auto=validate` (불일치 시 기동 실패) | 동일 |
+| 앱의 역할 | 스키마 변경 안 함. api 는 JDBC(`JdbcClient`) — **기동 시 `information_schema` 로 필요한 테이블·컬럼 검증, 없으면 기동 실패** (JPA `validate` 와 같은 역할) | 동일 |
 
 ```bash
 # 로컬에서
@@ -92,7 +92,8 @@ scripts/db-schema.sh prd plan  …                                            # 
 규칙
 - **뷰·트리거·프로시저 금지** (Community 판도 미지원 — "DB 에 업무 규칙 없음" 원칙과 일치)
 - **하위 호환으로**: 새 컬럼은 NULL 허용으로 추가 → 앱 배포 → 필요하면 다음 릴리스에서 NOT NULL. 삭제는 코드에서 안 쓰게 한 다음 릴리스에서
-- 제외 객체: `spatial_ref_sys`(PostGIS), `flyway_schema_history`(과거 이력 — Flyway 제거 후 정리)
+- 제외 객체: `spatial_ref_sys`(PostGIS), `flyway_schema_history`(과거 이력 — dev 는 2026-10-24 삭제, prd 는 Flyway 없는 버전 배포 후 삭제)
+- 테스트 DB(Testcontainers)도 `db/schema.sql` 로 생성 → **스키마 기준 파일 하나**
 
 ## 로컬 DB 툴로 접속 — `scripts/db.sh`
 

@@ -83,7 +83,7 @@ scripts/setup-runner.sh            # GitHub Actions self-hosted runner 등록
 
 ## 서비스 추가하기 (예: `api`)
 
-1. 새 앱 저장소 (예: `claudharmony-api`) — `claudharmony-homepage` 의 `Dockerfile`, `.github/workflows/*` 를 복사하고 서비스 이름만 변경
+1. 새 앱 저장소 — `claudharmony-api`(Spring) 또는 `claudharmony-web`(Node) 의 `Dockerfile`, `.github/workflows/*` 를 복사하고 서비스 이름만 변경
 2. `envs/dev/services.auto.tfvars.json`, `envs/prd/services.auto.tfvars.json` 에 추가:
    ```json
    "api": { "port": 8080, "route_path": "/api", "replicas": 1, "memory_mb": 512 }

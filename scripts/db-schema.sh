@@ -26,8 +26,8 @@ SCRATCH="claudharmony-atlas-dev"
 NET="claudharmony-atlas"
 case "$ENV_NAME" in dev) PORT=15442 ;; prd) PORT=25442 ;; *) echo "dev | prd"; exit 1 ;; esac
 
-# Atlas 가 관리하지 않는 객체 (PostGIS 시스템 테이블, 과거 Flyway 이력)
-EXCLUDES=(--exclude 'spatial_ref_sys' --exclude 'flyway_schema_history' --exclude 'flyway_schema_history.*')
+# Atlas 가 관리하지 않는 객체 (PostGIS 시스템 테이블)
+EXCLUDES=(--exclude 'spatial_ref_sys')
 
 K="kubectl --kubeconfig $HOME/.claudharmony/kubeconfig --context kind-claudharmony -n $ENV_NAME"
 

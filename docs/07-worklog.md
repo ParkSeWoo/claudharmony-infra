@@ -441,7 +441,7 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 | 구 `claudharmony-homepage` | 러너 서비스 중지·등록 해제·디렉토리 삭제, 저장소 **archive**, 로컬 클론 삭제(변경·미push 없음 확인) | GitHub 에서 unarchive |
 | `modules/docker/` (K8s 이전 Docker 모듈) | 삭제 | Git 이력 |
 | `setup-runner.sh` 기본 대상 | homepage → web, api, console | — |
-| prd `flyway_schema_history` | ⏳ Claude Code 권한 검사가 운영 DB 쓰기를 차단 → **사용자 직접 실행** 대기 | — |
+| prd `flyway_schema_history` | ✅ 사용자 직접 DROP (#39) — Claude Code 권한 검사가 운영 DB 쓰기를 차단해서 | pg_dump 백업 |
 
 **문제**: 이미지 일괄 삭제가 조용히 실패 — `docker rmi $RM` 에서 **zsh 는 따옴표 없는 변수를 단어로 쪼개지 않음** → 줄바꿈 포함 한 덩어리로 전달. `while read` 로 하나씩 처리해서 해결
 **남겨 둔 것**: 다른 프로젝트 이미지·볼륨(airflow, qdrant, kind ch4), Atlas 임시 DB 컨테이너(재사용), Terraform state `.backup`
@@ -461,6 +461,15 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 - 사용자 보유 도구: JetBrains **DataGrip** → `127.0.0.1:15432`(dev) / `25432`(prd), `readonly` 로 연결 성공
 - 권장: prd 데이터 소스 Read-only + 빨간색 표시
+
+### 39. prd Flyway 이력 테이블 삭제 → Atlas 제외 목록 정리
+
+- 사용자가 직접 실행: `kubectl -n prd exec pg-1 -c postgres -- psql -U postgres -d claudharmony -c "DROP TABLE IF EXISTS flyway_schema_history;"` → `DROP TABLE`
+- dev 는 #37 에서 이미 삭제 → 이제 dev·prd 모두 public 테이블 = `trend_snapshot, trend_keyword, spatial_ref_sys`
+- `scripts/db-schema.sh` 제외 목록: `spatial_ref_sys, flyway_schema_history, flyway_schema_history.*` → **`spatial_ref_sys` 만**
+- 확인: `db-schema.sh dev check` / `prd check` → 둘 다 `Schema is synced` ✅
+
+**배운 점**: 운영 DB 에 쓰는 일회성 명령은 사람이 `!` 로 직접 실행 — 자동화 도구가 운영 데이터를 바꾸지 않게 하는 안전장치가 제대로 동작한 것
 
 ---
 

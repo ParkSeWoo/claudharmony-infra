@@ -92,7 +92,7 @@ scripts/db-schema.sh prd plan  …                                            # 
 규칙
 - **뷰·트리거·프로시저 금지** (Community 판도 미지원 — "DB 에 업무 규칙 없음" 원칙과 일치)
 - **하위 호환으로**: 새 컬럼은 NULL 허용으로 추가 → 앱 배포 → 필요하면 다음 릴리스에서 NOT NULL. 삭제는 코드에서 안 쓰게 한 다음 릴리스에서
-- 제외 객체: `spatial_ref_sys`(PostGIS), `flyway_schema_history`(과거 이력 — dev 는 2026-10-24 삭제, prd 는 Flyway 없는 버전 배포 후 삭제)
+- 제외 객체: `spatial_ref_sys`(PostGIS 시스템 테이블). 과거 Flyway 이력 `flyway_schema_history` 는 2026-10-24 dev·prd 모두 삭제
 - 테스트 DB(Testcontainers)도 `db/schema.sql` 로 생성 → **스키마 기준 파일 하나**
 
 ## 로컬에서 DB 확인하기 — `scripts/db.sh`

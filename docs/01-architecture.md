@@ -93,7 +93,6 @@ infra/
 |--------|--------|------|------|
 | `web` | claudharmony-web | SvelteKit 3 / Node 24, :3000 | 외부 `/` |
 | `api` | claudharmony-api | Spring Boot 4.1.2 / Java 25, :8080 | 내부 전용 (`http://api`) |
-| `hello-app` | claudharmony-homepage | Spring Boot 3.5 / Java 21 | 외부 `/` — web 전환 후 제거 |
 
 ```mermaid
 flowchart LR

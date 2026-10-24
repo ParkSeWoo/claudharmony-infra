@@ -27,7 +27,7 @@
 | 14 | web / api 분리 — 카탈로그·동시배포 잠금 | ✅ |
 | 15 | api / web 러너 등록 | ✅ (사용자 실행, 러너 4개 online) |
 | 16 | dev 에 api → web 배포, hello-app 제거 | ✅ dev `/` = web `dev-05aa8f3` |
-| 17 | prd 에 api → web 배포, hello-app 제거 | ⏳ ai-root-78 이 release 브랜치로 |
+| 17 | prd 에 api → web 배포, hello-app 제거 | ✅ prd `/` = web `20261024-05aa8f3` |
 
 ---
 
@@ -257,6 +257,20 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **배운 점**: 같은 경로 라우트가 겹칠 때 옛 라우트를 지우는 순간 새 라우트로 넘어감 → 사전 검증(port-forward) + 라우트 삭제 = 무중단 전환
 
 **협업 이슈**: 이 세션 → ai-root-78 메시지가 계속 보류/만료됨. 원인은 두 세션의 **권한 모드 차이**(ai-root-78 = bypass, 이 세션 = auto). 반대 방향(ai-root-78 → 이 세션)은 전달됨.
+
+### 21. prd: api → web 배포, hello-app 제거 (사용자 요청 "prd 에도 web 배포해줘")
+
+1. claudharmony-api, claudharmony-web 에 `release/20261024` 생성 (각 develop = dev 검증 커밋 `09e3172`, `05aa8f3`)
+2. **api 먼저** Deploy prd → success, `api 1/1 20261024-09e3172`
+3. web Deploy prd → success, `web 1/1 20261024-05aa8f3`
+4. 전환 전 내부 검증: `kubectl -n prd port-forward svc/web 3300:80` → `/`, `/blog`, `/version` 200 (`/blog` 로 web → api 연동 확인)
+5. `envs/prd` 카탈로그·images 에서 hello-app 제거 → plan `3 to destroy` → push → **Infra apply 수동 실행(stack=prd)** success
+6. 검증
+   - `http://localhost/version` → `{"env":"prd","version":"20261024-05aa8f3"}`, LAN `192.168.45.214` → `<title>클라우드 하모니`
+   - 외부(check-host 9개 노드: DE/PT/US/IN/RO/HK/IL/NL): prd 터널 `/`, `/blog`, `/version` 모두 200
+   - prd 리소스: Deployment `api`, `tunnel`, `web` / HTTPRoute `web`
+
+**남은 것**: 각 저장소 `release/20261024` → `main` merge, `main` → `develop` back-merge / claudharmony-homepage archive
 
 ---
 

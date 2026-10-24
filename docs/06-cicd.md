@@ -6,7 +6,7 @@
 |--------|------|------|-------------|
 | [claudharmony-web](https://github.com/ParkSeWoo/claudharmony-web) | private | 프론트 — SvelteKit 3 (Node 24), 외부 `/` | `main`* |
 | [claudharmony-api](https://github.com/ParkSeWoo/claudharmony-api) | private | 백엔드 — Spring Boot 4.1.2 / Java 25, 내부 전용 | `main`* |
-| [claudharmony-homepage](https://github.com/ParkSeWoo/claudharmony-homepage) | private | (구) hello-app — web/api 전환 후 archive 예정 | `develop` |
+| [claudharmony-homepage](https://github.com/ParkSeWoo/claudharmony-homepage) | private | (구) hello-app — **dev/prd 에서 제거됨**, archive 예정 | `develop` |
 | [claudharmony-infra](https://github.com/ParkSeWoo/claudharmony-infra) | public | Terraform (클러스터/게이트웨이/환경), 배포 기록, 문서 | `main` |
 
 \* web/api 는 2026-10-24 현재 `main` 만 push 된 상태 — `develop` push 부터 dev 배포가 시작된다.
@@ -75,10 +75,10 @@ git checkout develop && git merge origin/main && git push      # back-merge
 |--------|--------|------|-----------|--------|--------|
 | `web` | `claudharmony/web` | 3000 | `/` | 256Mi | claudharmony-web |
 | `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api |
-| `hello-app` | `claudharmony/hello-app` | 8080 | `/` | 512Mi | claudharmony-homepage (전환 후 제거) |
+
 
 - **web → api** 는 SSR 서버 간 호출: 같은 Namespace 의 Service `api` (포트 80 → 8080) — `http://api`
-- **`/` 가 두 서비스(hello-app, web)에 겹치는 동안**: Gateway API 규칙상 **먼저 생성된 HTTPRoute 가 우선** → hello-app 이 계속 응답. web 확인 후 카탈로그에서 hello-app 을 제거하면 web 으로 넘어간다 (무중단 전환)
+- 2026-10-24 hello-app → web 전환 완료 (dev, prd). 같은 경로가 겹치면 **먼저 생성된 HTTPRoute 가 우선**이라, 새 서비스를 띄워 검증한 뒤 옛 서비스를 카탈로그에서 빼는 방식으로 무중단 전환했다
 
 ### 동시 배포
 

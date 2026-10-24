@@ -52,6 +52,20 @@ git checkout develop && git merge origin/main && git push      # back-merge
 
 `release/*` 가 아닌 브랜치에서 "Deploy prd" 를 실행하면 `reject` 잡이 실패시킨다.
 
+## 앱 ↔ 인프라 계약
+
+앱 저장소가 아래를 지키면 인프라 변경 없이 배포된다. 바꿔야 하면 infra 도 함께 수정.
+
+| # | 조건 | 인프라 쪽 위치 |
+|---|------|----------------|
+| 1 | 루트 `Dockerfile` 로 빌드, 빌드 인자 `APP_VERSION` | 앱 워크플로 `docker build` |
+| 2 | 컨테이너 포트 `8080` | `services.auto.tfvars.json` 의 `port` |
+| 3 | `/actuator/health/liveness`, `/actuator/health/readiness` 200 | `modules/k8s/app` probe |
+| 4 | `/actuator/**` 는 외부 비공개 (Gateway 에서 리다이렉트) | `modules/k8s/app` HTTPRoute |
+| 5 | 메모리 512Mi 이내 | `memory_mb` |
+| 6 | 서비스 이름 `hello-app`, 이미지 `claudharmony/hello-app` | 워크플로 + 카탈로그 key |
+| 7 | `GET /version` → `{env, version}` (배포 확인용) | 문서/점검 |
+
 ## 이미지 태그 규칙
 
 | 환경 | 태그 | 예 |

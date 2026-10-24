@@ -143,6 +143,13 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 러너가 없어 대기 중이던 **옛 코드(Docker 기준) Infra apply 실행 2건 취소** — 러너가 붙는 순간 K8s state 에 옛 코드가 적용되는 것을 방지
 - 앱 `Deploy dev` 대기 1건은 유지 → 러너 등록 시 E2E 테스트로 사용
 
+### 13. 홈페이지 개발은 다른 세션이 담당
+
+- 사용자: "홈페이지는 다른 세션이 만들고 있어" → `~/workspace/claudharmony-homepage` 는 이 세션에서 더 수정하지 않음
+- 다른 세션(ai-root-78)에 **앱 ↔ 인프라 계약**(Dockerfile, 8080, actuator probe, 512Mi, 이름 고정, `/version`, 워크플로 유지) 전달
+- 계약은 [CI/CD](06-cicd.md) 문서에 표로 정리
+- 주의: 러너가 등록되면 develop push 가 즉시 dev 배포를 트리거한다
+
 ---
 
 ## 템플릿 (다음 작업용)

@@ -620,6 +620,7 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 배포가 prd 전체를 apply하면서 #47에서 보류했던 prd Keycloak 환경변수도 함께 반영 → Pod 안 api 3개, web 4개 확인
 - 확인: https://claudharmony.io 200, `/auth/login` → `auth.claudharmony.io/realms/claudharmony` (redirect_uri `https://claudharmony.io/auth/callback`)
 - 흐름: 홈페이지 로그인(admin 계정) → 헤더 '관리자' → https://console.claudharmony.io (Keycloak 세션으로 SSO)
+- **사용자 확인 (운영)**: https://claudharmony.io 에서 admin 계정 로그인 → 헤더에 '관리자' · 사용자 이름 · 로그아웃 표시 ✅
 
 ---
 ### 51. 시스템 지도 (한 장 HTML)

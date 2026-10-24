@@ -406,6 +406,19 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 계약 표(06)·DB 문서(09)에 "api 는 database=true, 스키마는 Flyway" 반영
 - 참고: 트렌드 데이터가 커지면 [로드맵](09-database.md)대로 ClickHouse 로 분리
 
+### 33. 스키마 관리 Flyway → Atlas (선언형)
+
+배경: 사용자 "개발은 자동, 운영은 앱이 스키마 바꾸면 위험" → 대안 비교(Liquibase/Atlas/Bytebase/pgroll) → **Atlas** 선택 (Terraform 과 같은 plan/apply 감각)
+- 확인 중 발견: api 세션이 이미 prd 에 트렌드 기능 배포 → **Flyway 가 prd 기동 시 자동으로 테이블 생성** (09:18). 안전한 변경이었지만 우려한 경로가 실제로 쓰임
+1. Atlas `1.3.3-community` (1.3.4/1.3.5 는 2주 미만), `schema inspect` 로 dev 현재 구조 → `db/schema.sql`
+2. **문제**: 공식 `postgis/postgis:18-3.6` 은 arm64 이미지 없음 → `imresamu/postgis:18-3.6.1-trixie` (PostGIS 도커 관리자 멀티아치 빌드) 로 차이 계산용 DB
+3. `scripts/db-schema.sh <env> plan|apply|check` — prd: 위험 변경 차단, `CONFIRM="apply prd"`, pg_dump 백업. 제외: `spatial_ref_sys`, `flyway_schema_history`
+4. 테스트(dev plan): 현재 그대로 → `Schema is synced` / 컬럼 추가 → `ADD COLUMN` / 컬럼 삭제 → ⚠️ 위험 감지 / `check` 대기 변경 시 exit 3. prd 는 **계획만**(읽기) — prd apply 거부 테스트는 Claude Code 권한 검사가 "운영 배포" 로 차단 (올바른 차단)
+5. api 저장소 (다른 세션 로컬은 안 건드리고 GitHub 에 **커밋 1개** `d89b26a`): `db/schema.sql`, `deploy-dev`(스키마 자동 적용 → 앱), `deploy-prd`(check), `db-schema-prd`(수동·확인문구·백업)
+6. dev 배포에서 새 단계 실행 확인: `DB schema (dev 자동 적용): success` → `Schema is synced`
+
+남은 것: api 코드에서 Flyway 제거 + `ddl-auto=validate` (api 세션) → 이후 `flyway_schema_history` 정리
+
 ---
 
 ## 템플릿 (다음 작업용)

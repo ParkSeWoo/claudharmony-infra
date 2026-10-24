@@ -6,7 +6,7 @@
 |------|------|
 | **애플리케이션 (api)** | 도메인 규칙·검증·트랜잭션 경계 |
 | **PostgreSQL** | 저장·조회만. **저장 프로시저/트리거/DB 함수에 업무 규칙 넣지 않음** |
-| **스키마** | api 저장소의 **Flyway 마이그레이션** (코드와 함께 버전 관리) |
+| **스키마** | api 저장소의 **`db/schema.sql` (Atlas 선언형)** — 앱은 스키마를 바꾸지 않는다 |
 | **web** | DB 직접 접근 금지 — api 만 경유 |
 
 DB 는 언제든 갈아끼울 수 있는 저장소로 둔다 → 나중에 RDS / Cloud SQL 이전 시 접속 정보만 교체.
@@ -60,7 +60,39 @@ DB 는 언제든 갈아끼울 수 있는 저장소로 둔다 → 나중에 RDS /
 api 에 `spring-boot-starter-data-jpa`(또는 jdbc) + `org.postgresql:postgresql` + `flyway-database-postgresql` 를 추가하면 바로 연결된다.
 **의존성이 없으면 이 환경변수는 무시**된다.
 
-2026-10-24 api 가 JPA/Flyway 연결 완료 (api 세션): dev 에 `V1 trend` 적용 → `trend_snapshot`, `trend_keyword` 테이블. 기동 직후 + 10분 주기로 Google 트렌드(KR) Top 10 을 시간당 1건 저장 → https://dev.claudharmony.io/trends
+2026-10-24 api 가 JPA 연결 완료 (api 세션, 처음엔 Flyway → 같은 날 Atlas 로 전환): dev 에 `V1 trend` 적용 → `trend_snapshot`, `trend_keyword` 테이블. 기동 직후 + 10분 주기로 Google 트렌드(KR) Top 10 을 시간당 1건 저장 → https://dev.claudharmony.io/trends
+
+## 스키마 관리 — Atlas (선언형)
+
+> 2026-10-24 Flyway → **Atlas** 로 전환. 이유: 운영에서 **앱 기동 시 자동 마이그레이션은 위험** (배포 = 스키마 변경, 실패 시 앱·DB 동시 꼬임).
+
+"테이블이 이렇게 생겨야 한다"를 **`db/schema.sql` 한 파일**로 관리하고, Atlas 가 실제 DB 와 비교해 변경 SQL 을 **계산**한다 (Terraform 의 plan/apply 와 같은 감각).
+
+| | dev | prd |
+|---|---|---|
+| 적용 시점 | `develop` push → `deploy-dev` 의 **DB schema 단계에서 자동** (앱 배포 전) | **`DB schema prd` 워크플로 수동 실행** (release/* 브랜치) |
+| 안전장치 | — | ① 계획만 먼저 (confirm 비움) ② `confirm = "apply prd"` ③ 적용 직전 **pg_dump 백업** (`~/.claudharmony/backups/`) ④ 위험 변경(DROP·타입 변경)은 `allow_destructive` 필요 |
+| 앱 배포 | 스키마 적용 뒤 | **`deploy-prd` 가 `check` — 적용 안 된 변경이 있으면 배포 중단** → "스키마 먼저, 앱 나중" 강제 |
+| 앱의 역할 | 스키마 변경 안 함, JPA `ddl-auto=validate` (불일치 시 기동 실패) | 동일 |
+
+```bash
+# 로컬에서
+scripts/db-schema.sh dev plan  ~/workspace/claudharmony-api/db/schema.sql   # 실행될 SQL 미리보기
+scripts/db-schema.sh dev apply ~/workspace/claudharmony-api/db/schema.sql
+scripts/db-schema.sh prd plan  …                                            # prd 는 계획만 로컬에서, 적용은 워크플로로
+```
+
+동작: 로컬 Docker 에 빈 PostGIS DB(`claudharmony-atlas-dev`, `imresamu/postgis:18-3.6.1-trixie` — 공식 이미지는 arm64 없음)를 띄워 차이 계산용으로 쓰고, 대상 DB 는 port-forward + 앱 계정(소유자)으로 접속. Atlas `1.3.3-community` (오픈소스, 로그인 불필요).
+
+| 변경 | 계획 결과 예 |
+|------|-------------|
+| 컬럼 추가 | `ALTER TABLE "trend_keyword" ADD COLUMN "region" character varying(20) NULL;` |
+| 컬럼 삭제 | `ALTER TABLE ... DROP COLUMN ...` + **⚠️ 위험 변경 감지** |
+
+규칙
+- **뷰·트리거·프로시저 금지** (Community 판도 미지원 — "DB 에 업무 규칙 없음" 원칙과 일치)
+- **하위 호환으로**: 새 컬럼은 NULL 허용으로 추가 → 앱 배포 → 필요하면 다음 릴리스에서 NOT NULL. 삭제는 코드에서 안 쓰게 한 다음 릴리스에서
+- 제외 객체: `spatial_ref_sys`(PostGIS), `flyway_schema_history`(과거 이력 — Flyway 제거 후 정리)
 
 ## 로컬 DB 툴로 접속 — `scripts/db.sh`
 

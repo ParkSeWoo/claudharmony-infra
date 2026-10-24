@@ -39,6 +39,8 @@ gitGraph
 
 ### 운영 배포 절차
 
+> DB 스키마 변경이 있는 릴리스는 **`DB schema prd`(계획 → `apply prd`) 를 먼저** 실행. 안 하면 `Deploy prd` 가 `check` 에서 멈춘다.
+
 ```bash
 cd ~/workspace/claudharmony-homepage
 git checkout develop && git pull
@@ -68,14 +70,14 @@ git checkout develop && git merge origin/main && git push      # back-merge
 | 4 | `GET /version` → `{env, version}` (외부 노출 서비스) | 배포 확인 |
 | 5 | 워크플로는 `shell: bash`(pipefail) + 배포 전 infra 클론 `pull --ff-only` | 앱 `.github/workflows/deploy-*.yml` |
 | 6 | 서비스 이름 = 카탈로그 key = Deployment/Service 이름 = 내부 DNS | `envs/*/services.auto.tfvars.json` |
-| 7 | `"database": true` 면 `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` 주입 (PostgreSQL `pg-rw`). 스키마는 앱의 Flyway | [데이터베이스](09-database.md) |
+| 7 | `"database": true` 면 `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` 주입 (PostgreSQL `pg-rw`). **스키마는 `db/schema.sql`(Atlas)** — 앱은 스키마를 바꾸지 않음, prd 는 `DB schema prd` → `Deploy prd` 순서 | [데이터베이스](09-database.md) |
 
 ### 서비스 카탈로그 (dev / prd 동일)
 
 | 서비스 | 이미지 | 포트 | 외부 경로 | 메모리 | 저장소 |
 |--------|--------|------|-----------|--------|--------|
 | `web` | `claudharmony/web` | 3000 | `/` | 256Mi | claudharmony-web |
-| `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api · `database=true` (**Flyway 로 스키마 관리**) |
+| `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api · `database=true` (**Atlas `db/schema.sql`**) |
 
 
 - **web → api** 는 SSR 서버 간 호출: 같은 Namespace 의 Service `api` (포트 80 → 8080) — `http://api`

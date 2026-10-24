@@ -13,7 +13,7 @@ flowchart TB
     end
     subgraph OFFICE[사무실 LAN 192.168.45.0/24]
       SK[SK브로드밴드 GW-ME611R<br/>WAN: 192.168.75.142 (DHCP)<br/>LAN: 192.168.45.1]
-      MAC[MacBook Pro M4 Max<br/>192.168.45.214 · Wi-Fi 2.4G<br/>Docker Desktop · nginx:80]
+      MAC[MacBook Pro M4 Max<br/>192.168.45.214 · Wi-Fi 2.4G<br/>Docker Desktop · kind K8s<br/>:80 → Gateway]
     end
     INET --- GNT --- SK
     SK -- Wi-Fi --- MAC
@@ -36,7 +36,7 @@ flowchart TB
 | 공인 IP 성격 | 유동 IP 일 가능성 높음 | 바뀌면 접속 주소도 바뀜 → DDNS 권장 |
 | DHCP 임대 | 6시간 | |
 | macOS 방화벽 | 꺼짐 | |
-| Docker Desktop | 포트 80 → nginx | 다른 프로젝트가 5432/5433/6333/8080 사용 중 (충돌 없음) |
+| Docker Desktop | 포트 80 → kind control-plane:30080 (Envoy Gateway) | 다른 프로젝트가 5432/5433/6333/8080, kind `ch4` 사용 중 (충돌 없음) |
 
 ## 외부 접근을 위한 공유기 설정 (수동 작업)
 
@@ -58,15 +58,15 @@ flowchart TB
 GNT2400 관리자 계정이 없어 포트포워딩 불가 → 터널로 공개 중.
 
 ```
-외부 → https://<랜덤>.trycloudflare.com → Cloudflare → tunnel 컨테이너 → nginx:80 → hello-app
+외부 → https://<랜덤>.trycloudflare.com → Cloudflare → tunnel Pod(ns dev|prd) → Gateway(Envoy) → HTTPRoute → Service → Pod
 ```
 
 | 항목 | 내용 |
 |------|------|
-| 컨테이너 | `tunnel` (`cloudflare/cloudflared:2025.10.0`, `--restart unless-stopped`, 네트워크 `claudharmony-office`) |
-| 현재 주소 확인 | `scripts/infra.sh url` |
-| 주의 | 컨테이너 재시작 시 **주소가 바뀜**. 주소를 아는 누구나 접속 가능 |
-| 관리 | 현재 `docker run` 으로 수동 기동 (Terraform 미관리). `modules/tunnel` 은 준비됨 → `envs/office/main.tf` 에 연결 예정 |
+| 실행 위치 | 각 Namespace 의 `tunnel` Deployment (`cloudflare/cloudflared:2025.10.0`) — 환경마다 주소 1개 |
+| 현재 주소 확인 | `scripts/infra.sh prd url` / `scripts/infra.sh dev url` |
+| 주의 | tunnel Pod 재시작 시 **주소가 바뀜**. 주소를 아는 누구나 접속 가능 |
+| 관리 | Terraform (`modules/k8s/tunnel`) — 2026-10-24 Docker 수동 실행에서 전환 |
 | 고정 주소 | 도메인 구매 → Cloudflare named tunnel 로 전환 |
 
 ### 상위 공유기 권한이 없을 때
@@ -86,7 +86,7 @@ $1
 ### 검증
 
 ```bash
-scripts/infra.sh check                     # 사무실 안: localhost / LAN 확인
+scripts/infra.sh prd check                 # 사무실 안: localhost + 터널 확인
 curl http://<PUBLIC_IP>:8888/              # 사무실 밖(휴대폰 LTE 등)에서 확인
 ```
 
@@ -95,6 +95,6 @@ curl http://<PUBLIC_IP>:8888/              # 사무실 밖(휴대폰 LTE 등)에
 ## 도메인 구매 후
 
 1. DNS A 레코드 → `<PUBLIC_IP>` (유동이면 Cloudflare DDNS 등)
-2. `envs/office/terraform.tfvars` 의 `server_name = "도메인"`
+2. HTTPRoute `hostnames` 에 도메인 추가 (`modules/k8s/env` 의 `hostnames`), Gateway 에 HTTPS 리스너
 3. TLS: 443 포워딩 + Let's Encrypt (certbot 컨테이너 or Cloudflare proxy) — `reverse-proxy` 모듈 확장 예정
 4. 대안: **Cloudflare Tunnel** — 포트포워딩 없이 외부 공개 가능, 공인 IP 노출 없음

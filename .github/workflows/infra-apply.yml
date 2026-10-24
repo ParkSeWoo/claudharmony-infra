@@ -1,39 +1,85 @@
 name: Infra apply
 
-# 인프라 코드 변경: main 에 머지되면 dev 자동 적용
-# prd / platform(cluster, gateway) 은 수동 실행 (Actions → Infra apply → Run workflow)
-# (앱 배포에 의한 images.auto.tfvars.json 커밋은 [skip ci] 라 여기서 다시 돌지 않는다)
+# 인프라 저장소 main 에 push(머지)되면 바뀐 스택을 자동 적용한다.
+#   platform/gateway/**              → gateway 자동
+#   modules/k8s/**, envs/dev/**      → dev 자동
+#   envs/prd/**                      → 자동 X (운영 보호) — Run workflow 로 prd 선택
+#   platform/cluster/**              → 자동 X (kind 는 재생성됨) — Run workflow 로 cluster 선택
+# 앱 배포(deploy.sh)도 해당 환경 전체를 apply 하므로, main 의 인프라 변경은 다음 배포 때도 반영된다.
+# deploy.sh 가 남기는 images 기록 커밋은 [skip ci] 라 여기서 다시 돌지 않는다.
 on:
   push:
     branches: [main]
     paths:
+      - "platform/gateway/**"
       - "modules/k8s/**"
       - "envs/dev/**"
   workflow_dispatch:
     inputs:
-      environment:
-        description: "적용할 환경"
+      stack:
+        description: "적용할 스택"
         type: choice
         options: [dev, prd, gateway, cluster]
         default: dev
 
-concurrency:
-  group: infra-${{ inputs.environment || 'dev' }}
-  cancel-in-progress: false
-
 jobs:
-  apply:
-    runs-on: [self-hosted, claudharmony-office]
-    environment: ${{ inputs.environment || 'dev' }}
-    env:
-      ENV_NAME: ${{ inputs.environment || 'dev' }}
+  changes:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      gateway: ${{ steps.filter.outputs.gateway }}
+      dev: ${{ steps.filter.outputs.dev }}
     steps:
       - uses: actions/checkout@v4
-      - name: Plan
-        run: scripts/infra.sh "$ENV_NAME" plan
-      - name: Apply
-        run: AUTO_APPROVE=1 scripts/infra.sh "$ENV_NAME" apply
-      - name: Summary
-        run: |
-          echo "### infra apply: $ENV_NAME" >> "$GITHUB_STEP_SUMMARY"
-          scripts/infra.sh "$ENV_NAME" status >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            gateway:
+              - "platform/gateway/**"
+            dev:
+              - "modules/k8s/**"
+              - "envs/dev/**"
+
+  gateway:
+    needs: changes
+    if: needs.changes.outputs.gateway == 'true'
+    runs-on: [self-hosted, claudharmony-office]
+    concurrency: { group: infra-gateway, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/infra.sh gateway plan
+      - run: AUTO_APPROVE=1 scripts/infra.sh gateway apply
+      - run: scripts/infra.sh gateway status >> "$GITHUB_STEP_SUMMARY"
+
+  dev:
+    needs: [changes, gateway]
+    # gateway 가 건너뛰어져도(skipped) dev 는 실행
+    if: always() && needs.changes.outputs.dev == 'true' && needs.gateway.result != 'failure'
+    runs-on: [self-hosted, claudharmony-office]
+    environment: dev
+    concurrency: { group: infra-dev, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/infra.sh dev plan
+      - run: AUTO_APPROVE=1 scripts/infra.sh dev apply
+      - run: |
+          echo '### dev' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          scripts/infra.sh dev status >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, claudharmony-office]
+    environment: ${{ inputs.stack == 'prd' && 'prd' || 'dev' }}
+    concurrency: { group: "infra-${{ inputs.stack }}", cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/infra.sh "${{ inputs.stack }}" plan
+      - run: AUTO_APPROVE=1 scripts/infra.sh "${{ inputs.stack }}" apply
+      - run: |
+          echo "### ${{ inputs.stack }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          scripts/infra.sh "${{ inputs.stack }}" status >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

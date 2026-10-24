@@ -23,7 +23,7 @@ pages = sorted(DOCS.glob("0*.md"))
 titles = {}
 for p in pages:
     h1 = re.search(r"^# (.+)$", p.read_text(encoding="utf-8"), re.M).group(1)
-    titles[p.stem] = re.sub(r"^(\d+)\.\s*", r"\1 ", h1).split(" — ")[0].strip()
+    titles[p.stem] = re.sub(r"^(\d+)\.\s*", r"\1 ", h1).split(" — ")[0].strip().replace("/", "·")
 
 VAULT.mkdir(parents=True, exist_ok=True)
 for p in pages:

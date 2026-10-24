@@ -136,6 +136,13 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - `scripts/setup-runner.sh` 작성 — 저장소별 러너 등록 + launchd 서비스
 - Claude Code 자동 권한 검사가 "상시 실행 서비스 설치" 로 차단 → **사용자가 직접 실행**: `! ~/infra/scripts/setup-runner.sh`
 
+### 12. 문서 개편 & 정리
+
+- docs 전면 개편: 01 아키텍처(K8s), 03 운영(Runbook), **05 K8s 학습 가이드**, 06 CI/CD, 07 작업 기록
+- `sync_obsidian.py`: 제목의 `/` 를 `·` 로 치환 (`06 CI/CD.md` 가 하위 폴더로 해석돼 실패하던 문제)
+- 러너가 없어 대기 중이던 **옛 코드(Docker 기준) Infra apply 실행 2건 취소** — 러너가 붙는 순간 K8s state 에 옛 코드가 적용되는 것을 방지
+- 앱 `Deploy dev` 대기 1건은 유지 → 러너 등록 시 E2E 테스트로 사용
+
 ---
 
 ## 템플릿 (다음 작업용)

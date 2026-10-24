@@ -58,7 +58,9 @@ DB 는 언제든 갈아끼울 수 있는 저장소로 둔다 → 나중에 RDS /
 | `SPRING_DATASOURCE_PASSWORD` | Secret `pg-app` → `password` |
 
 api 에 `spring-boot-starter-data-jpa`(또는 jdbc) + `org.postgresql:postgresql` + `flyway-database-postgresql` 를 추가하면 바로 연결된다.
-**의존성이 없으면 이 환경변수는 무시**된다 (2026-10-24 현재 api 는 DB 의존성 없음).
+**의존성이 없으면 이 환경변수는 무시**된다.
+
+2026-10-24 api 가 JPA/Flyway 연결 완료 (api 세션): dev 에 `V1 trend` 적용 → `trend_snapshot`, `trend_keyword` 테이블. 기동 직후 + 10분 주기로 Google 트렌드(KR) Top 10 을 시간당 1건 저장 → https://dev.claudharmony.io/trends
 
 ## 로컬 DB 툴로 접속 — `scripts/db.sh`
 

@@ -399,6 +399,13 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 사용자: "10초마다 자동 새로고침은 나중에" → htmx `every 10s/60s/5s` 제거, `refresh from:body` 이벤트 + 상단 **새로고침** 버튼(마지막 갱신 시각 표시)
 - 배포 `console-7967449` (러너 미등록이라 `deploy.sh` 수동 실행)
 
+### 32. api 가 PostgreSQL 사용 시작 (api 세션 알림)
+
+- api 세션(ai-root-78): 기존 CNPG(`pg-rw`, `database=true` 주입) 그대로 사용, 추가 인프라 요청 취소
+- 확인: dev `flyway_schema_history` → `1 trend success`, `trend_snapshot` 1행 / `trend_keyword` 10행, https://dev.claudharmony.io/trends 200 (web `dev-4aa262a`)
+- 계약 표(06)·DB 문서(09)에 "api 는 database=true, 스키마는 Flyway" 반영
+- 참고: 트렌드 데이터가 커지면 [로드맵](09-database.md)대로 ClickHouse 로 분리
+
 ---
 
 ## 템플릿 (다음 작업용)

@@ -75,7 +75,7 @@ git checkout develop && git merge origin/main && git push      # back-merge
 | 서비스 | 이미지 | 포트 | 외부 경로 | 메모리 | 저장소 |
 |--------|--------|------|-----------|--------|--------|
 | `web` | `claudharmony/web` | 3000 | `/` | 256Mi | claudharmony-web |
-| `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api · **DB 연결** |
+| `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api · `database=true` (**Flyway 로 스키마 관리**) |
 
 
 - **web → api** 는 SSR 서버 간 호출: 같은 Namespace 의 Service `api` (포트 80 → 8080) — `http://api`

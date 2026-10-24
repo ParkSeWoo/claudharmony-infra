@@ -12,6 +12,11 @@ server {
         default_type text/plain;
         return 200 "ok\n";
     }
+
+    # Spring actuator 는 외부 비공개 (컨테이너 헬스체크는 앱에 직접 접근)
+    location ^~ /actuator {
+        return 404;
+    }
 %{ for r in routes }
     location ${r.path} {
         set $upstream ${r.upstream};

@@ -2,8 +2,8 @@ output "local_url" {
   value = "http://localhost:${var.public_port}"
 }
 
-output "proxy" {
-  value = module.proxy.name
+output "tunnel_container" {
+  value = var.enable_tunnel ? module.tunnel["tunnel"].name : null
 }
 
 output "services" {

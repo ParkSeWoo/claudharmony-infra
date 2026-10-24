@@ -1,15 +1,15 @@
 variable "name" {
-  description = "서비스 이름 (컨테이너 이름 = 내부 DNS 이름)"
+  description = "컨테이너 이름 (환경 prefix 포함, 예: dev-hello-app)"
   type        = string
 }
 
-variable "source_dir" {
-  description = "Dockerfile 이 있는 앱 소스 디렉토리"
+variable "alias" {
+  description = "네트워크 내부 DNS 이름 (예: hello-app)"
   type        = string
 }
 
-variable "image_repo" {
-  description = "로컬 이미지 저장소 이름"
+variable "image" {
+  description = "배포할 이미지 (예: claudharmony/hello-app:dev-1a2b3c4)"
   type        = string
 }
 

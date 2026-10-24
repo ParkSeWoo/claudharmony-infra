@@ -1,0 +1,39 @@
+name: Infra apply
+
+# 인프라 코드 변경: main 에 머지되면 dev 자동 적용, prd 는 수동 실행
+# (앱 배포에 의한 images.auto.tfvars.json 커밋은 [skip ci] 라 여기서 다시 돌지 않는다)
+on:
+  push:
+    branches: [main]
+    paths:
+      - "modules/**"
+      - "envs/dev/**"
+      - "scripts/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "적용할 환경"
+        type: choice
+        options: [dev, prd]
+        default: dev
+
+concurrency:
+  group: infra-${{ inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: [self-hosted, claudharmony-office]
+    environment: ${{ inputs.environment || 'dev' }}
+    env:
+      ENV_NAME: ${{ inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Plan
+        run: scripts/infra.sh "$ENV_NAME" plan
+      - name: Apply
+        run: AUTO_APPROVE=1 scripts/infra.sh "$ENV_NAME" apply
+      - name: Summary
+        run: |
+          echo "### infra apply: $ENV_NAME" >> "$GITHUB_STEP_SUMMARY"
+          scripts/infra.sh "$ENV_NAME" status >> "$GITHUB_STEP_SUMMARY" || true

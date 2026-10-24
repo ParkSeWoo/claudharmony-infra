@@ -178,6 +178,19 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **해결 (진행 중)**: infra 저장소 전용 **SSH deploy key** — `scripts/setup-deploy-key.sh` (Claude Code 권한 검사가 "접근 권한 추가" 로 차단 → 사용자 실행 필요)
 **추가**: `deploy.sh` 가 기록 push 실패 시 **에러로 종료**하도록 변경 (기록 누락 시 다음 apply 가 옛 이미지로 되돌릴 위험)
 
+### 15. Deploy key 설정 (사용자 실행)
+
+- 사용자가 `scripts/setup-deploy-key.sh` 실행 → deploy key 등록(id 167503523) 성공, 연결 테스트 실패
+
+**문제**: `ssh: connect to host github.com port 22: Operation timed out`
+**원인**: 사무실 네트워크가 **아웃바운드 22번 포트 차단**
+**해결**: GitHub 의 SSH-over-443 사용 — 원격을 `ssh://git@ssh.github.com:443/ParkSeWoo/claudharmony-infra.git` 로 (스크립트 수정 `e269b3d`)
+**확인**: `env -u SSH_AUTH_SOCK git ls-remote` 성공 — 에이전트/키체인 없이 deploy key 만으로 접근됨
+**배운 점**: 회사/사무실망은 22 를 막는 경우가 많다 → `ssh -T -p 443 git@ssh.github.com`
+
+- 다른 세션으로 보낸 공지 2건은 권한 모드 차이로 **보류 후 만료(미전달)** → 사용자 요청으로 재전송 (승인 대기)
+- prd 배포 테스트(`release/20261024` 생성 + Deploy prd 실행)는 Claude Code 권한 검사가 "운영 배포" 로 차단 → 전략대로 **사용자가 수동 실행**
+
 ---
 
 ## 템플릿 (다음 작업용)

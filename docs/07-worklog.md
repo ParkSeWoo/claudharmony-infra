@@ -315,6 +315,14 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **원인**: `~/.zshrc` 의 `KUBECONFIG` 가 lima k3s 파일 하나만 가리킴 (컨텍스트 0개). 우리 클러스터는 전용 `~/.claudharmony/kubeconfig`
 **해결**: `KUBECONFIG` 를 3개 파일 합치기 + `k9ch`/`kch` alias (백업 `~/.zshrc.bak-20261024`) → `kubectl config get-contexts` 에 `kind-claudharmony`, `kind-ch4` 표시
 
+### 25. 기술 블로그 글 추가 — 도메인 연결
+
+- 블로그 글 저장 위치: `claudharmony-api` 의 `src/main/resources/posts/*.md` (파일명 = slug, YAML front matter: title/summary/date/tags)
+- 글 `custom-domain-cloudflare-tunnel.md` 작성 — 순서, 최소 권한 토큰 표, Terraform 스니펫, 막혔던 곳(권한 이름·빈 body 판별·0/72·영역 범위)
+- **민감 정보 제외**: 토큰·Account ID·Tunnel ID·이메일·공인 IP 없음 (정규식 검사)
+- 다른 세션 저장소라 **새 파일 하나만** API 로 develop 에 추가(`46aeb0b`) → Deploy dev 성공 → https://dev.claudharmony.io/blog/custom-domain-cloudflare-tunnel 200
+- prd 반영은 api release 브랜치로 (사용자 확인 후)
+
 ---
 
 ## 템플릿 (다음 작업용)

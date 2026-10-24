@@ -26,7 +26,8 @@
 | 13 | 파이프라인 E2E — prd | ✅ `20261024-c0184f6` 수동 배포 + 기록 자동 커밋 |
 | 14 | web / api 분리 — 카탈로그·동시배포 잠금 | ✅ |
 | 15 | api / web 러너 등록 | ✅ (사용자 실행, 러너 4개 online) |
-| 16 | dev 에 api → web 배포, hello-app 제거 | ⏳ 러너 등록 후 (ai-root-78 이 develop push) |
+| 16 | dev 에 api → web 배포, hello-app 제거 | ✅ dev `/` = web `dev-05aa8f3` |
+| 17 | prd 에 api → web 배포, hello-app 제거 | ⏳ ai-root-78 이 release 브랜치로 |
 
 ---
 
@@ -240,6 +241,22 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **배운 점**: 러너 상태는 `gh api repos/<r>/actions/runners`, 원인은 `~/.claudharmony/runners/<repo>/_diag/Runner_*.log`
 
 - 다른 세션(ai-root-78)에 준비 완료 알림 → 다음: develop push 로 dev 에 api → web 배포
+
+### 20. dev: hello-app → web 전환
+
+다른 세션(ai-root-78)이 develop push → **Deploy dev 자동 배포**: api `dev-09e3172`, web `dev-05aa8f3` (배포 잠금으로 순차 처리, 기록 자동 커밋)
+- ai-root-78 검증: port-forward 로 web `/`, `/blog`, `/blog/gateway-api` 200, `/blog/nope` 404, web → `http://api` 연동(글 7개)
+- 이 시점 `dev.localhost` 는 **먼저 생긴 hello-app 라우트**가 응답 (`dev-45d45c0`) — 예상대로
+
+전환:
+1. `envs/dev/services.auto.tfvars.json`, `images.auto.tfvars.json` 에서 `hello-app` 제거
+2. `plan`: hello-app 의 HTTPRoute / Deployment / Service **3 destroy**, 나머지 변경 없음
+3. push(`6a558b1`) → **Infra apply 가 dev 자동 적용** ✓
+4. 검증: `http://dev.localhost/version` → `dev-05aa8f3`, `<title>클라우드 하모니`, dev 터널도 web, prd 는 `20261024-c0184f6` 그대로
+
+**배운 점**: 같은 경로 라우트가 겹칠 때 옛 라우트를 지우는 순간 새 라우트로 넘어감 → 사전 검증(port-forward) + 라우트 삭제 = 무중단 전환
+
+**협업 이슈**: 이 세션 → ai-root-78 메시지가 계속 보류/만료됨. 원인은 두 세션의 **권한 모드 차이**(ai-root-78 = bypass, 이 세션 = auto). 반대 방향(ai-root-78 → 이 세션)은 전달됨.
 
 ---
 

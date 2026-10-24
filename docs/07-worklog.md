@@ -21,8 +21,9 @@
 | 8 | 앱 저장소 분리 (claudharmony-homepage) + 배포 워크플로 | ✅ |
 | 9 | Kubernetes v1.37 (kind) + Envoy Gateway 로 전환 | ✅ |
 | 10 | 인프라 자동 적용 워크플로 | ✅ (러너 등록 후 동작) |
-| 11 | self-hosted runner 등록 | ⏳ 사용자 실행 필요: `scripts/setup-runner.sh` |
-| 12 | 파이프라인 end-to-end 테스트 (develop push → dev, release → prd) | ⏳ 11 이후 |
+| 11 | self-hosted runner 등록 | ✅ (사용자 실행) |
+| 12 | 파이프라인 E2E — dev | ✅ `dev-c0184f6` 자동 배포 (기록 push 는 deploy key 필요) |
+| 13 | 파이프라인 E2E — prd | ⏳ deploy key 설정 후 |
 
 ---
 
@@ -149,6 +150,33 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 다른 세션(ai-root-78)에 **앱 ↔ 인프라 계약**(Dockerfile, 8080, actuator probe, 512Mi, 이름 고정, `/version`, 워크플로 유지) 전달
 - 계약은 [CI/CD](06-cicd.md) 문서에 표로 정리
 - 주의: 러너가 등록되면 develop push 가 즉시 dev 배포를 트리거한다
+
+### 14. 러너 등록 & dev 파이프라인 첫 실행
+
+- 사용자가 `scripts/setup-runner.sh` 실행 → 러너 2개 online (launchd 서비스)
+- 대기 중이던 `Deploy dev` 가 바로 실행 → **14초 만에 ✓ 성공 표시인데 실제로는 배포 안 됨** (`/version` 이 그대로 `dev-initial`)
+
+**문제 1**: `deploy.sh: Permission denied`
+**원인**: `Write` 로 만든 파일이라 git 에 실행 권한(100755)이 없었음 (`git ls-files -s` 로 확인)
+**해결**: `chmod +x` + `git update-index --chmod=+x`
+
+**문제 2**: 실패했는데 워크플로가 성공으로 표시
+**원인**: `run:` 의 기본 셸은 `bash -e {0}` — `deploy.sh | tee deploy.log` 에서 파이프 앞쪽 실패를 무시
+**해결**: 워크플로에 `defaults.run.shell: bash` → GitHub 이 `bash --noprofile --norc -eo pipefail` 로 실행
+**배운 점**: CI 에서 `| tee` 를 쓸 땐 반드시 pipefail. "성공" 표시만 믿지 말고 결과(`/version`)로 검증
+
+**문제 3**: 배포용 infra 클론이 오래된 스크립트를 실행할 수 있음 (클론이 있으면 pull 안 함)
+**해결**: 워크플로에서 deploy 전에 `git -C $INFRA pull --ff-only`
+
+→ 홈페이지 저장소 워크플로 2개만 GitHub API 로 커밋 (다른 세션의 로컬 작업은 건드리지 않음, 해당 세션에 알림)
+
+- 재실행 결과: **dev = `dev-c0184f6` 롤링 업데이트 성공** ✅
+
+**문제 4**: 배포 기록 push 실패 `could not read Username for 'https://github.com': Device not configured`
+**원인**: launchd 서비스로 도는 러너는 `gh` 의 키체인 인증을 못 읽음
+**임시 조치**: 기록 커밋을 수동 push (`f54bd26`)
+**해결 (진행 중)**: infra 저장소 전용 **SSH deploy key** — `scripts/setup-deploy-key.sh` (Claude Code 권한 검사가 "접근 권한 추가" 로 차단 → 사용자 실행 필요)
+**추가**: `deploy.sh` 가 기록 push 실패 시 **에러로 종료**하도록 변경 (기록 누락 시 다음 apply 가 옛 이미지로 되돌릴 위험)
 
 ---
 

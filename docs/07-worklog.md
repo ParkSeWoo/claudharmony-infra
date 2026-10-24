@@ -527,6 +527,21 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 앱 세션 보고: 로컬 Keycloak(테마 미리보기)을 중지했고, 장애 뒤 xDS를 못 받아 1/2로 남은 Envoy 프록시 Pod를 delete해 복구함 (#41 보충)
 
 ---
+### 43. Docker 메모리 증설 → Keycloak 복구 → 공개 로그인 확인
+
+- 사용자: "니가 해줘" → Docker Desktop `settings-store.json`에 `MemoryMiB: 20480`, `SwapMiB: 2048` (백업 `settings-store.json.bak-20261024`)
+  - `osascript quit`은 VM만 내려가고 backend가 멈춘 상태로 남음(docker 명령 무응답) → 걸린 docker 클라이언트 종료 후 `docker desktop restart` → **19.5GB** 확인
+  - 재시작 후 꺼져 있던 것: `ch-pg`(재시작 정책 없음 → `docker start`로 원상복구), `claudharmony-atlas-dev`(필요할 때 스크립트가 다시 만듦)
+  - prd·dev 200 (약 1분), 모든 Pod Ready
+- `scripts/infra.sh identity apply` → Keycloak replicas 0 → 1, `realms plan` = 변경 없음
+- 공개 로그인 확인 중 두 가지 수정:
+  1. `/token` 403 `Invalid origin` — Envoy가 `X-Forwarded-Proto`를 http로 덮어씀 → 공개 HTTPRoute에서 `https`로 고정
+  2. 계정 화면 401 — default_roles에서 `account/view-profile`, `account/manage-account`가 빠져 있었음 → 다시 포함
+- 스크린샷 `11-login-page`, `12-account` 추가 (문서 4-4, 블로그)
+
+**배운 점**: 프록시가 여러 겹(Cloudflare → cloudflared → Envoy)이면 "원래 https였다"는 정보가 중간에 사라질 수 있다. 앱이 http/https를 판단하는 곳(Keycloak, SvelteKit ORIGIN, Spring `forward-headers-strategy`)은 하나씩 확인할 것. Terraform의 "목록 전체를 지정하는" 리소스(default_roles)는 기본값을 덮어쓴다.
+
+---
 
 ## 템플릿 (다음 작업용)
 

@@ -251,6 +251,12 @@ resource "kubectl_manifest" "route_public" {
             [for r in var.public_realms : { path = { type = "PathPrefix", value = "/realms/${r}" } }],
             [{ path = { type = "PathPrefix", value = "/resources" } }],
           )
+          # 이 호스트는 Cloudflare(https)로만 들어온다. Envoy 는 X-Forwarded-Proto 를 자기 연결(http)로 덮어쓰므로
+          # 여기서 https 로 고정한다 — 없으면 Keycloak 이 http 로 판단해 Origin 검사(Invalid origin 403)·Secure 쿠키가 깨진다
+          filters = [{
+            type                  = "RequestHeaderModifier"
+            requestHeaderModifier = { set = [{ name = "X-Forwarded-Proto", value = "https" }] }
+          }]
           backendRefs = [{ name = kubernetes_service_v1.keycloak.metadata[0].name, port = 80 }]
         },
         {

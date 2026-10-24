@@ -164,6 +164,16 @@ dev realm의 확인용 사용자 `tester`입니다. 비밀번호는 Secret `dev/
 scripts/infra.sh edge apply   # Cloudflare 토큰 필요 — 사람이 직접 실행
 ```
 
+### 4-4. 공개 로그인 화면 (인터넷)
+
+`https://auth.claudharmony.io/realms/claudharmony-dev/account`에 들어가면 Keycloak 로그인 화면이 한국어로 나옵니다. 제목은 realm 표시 이름입니다. 로그인 화면 테마는 앱 세션의 claudharmony-keycloak 이미지로 바꿀 예정입니다([5-1](#5-1-커스텀-이미지-로그인-테마-배포)).
+
+![공개 로그인 화면 — 한국어](images/keycloak/11-login-page.png)
+
+`tester`로 로그인한 뒤의 계정 화면입니다. 사용자는 여기서 자기 정보와 비밀번호를 관리합니다.
+
+![로그인 후 계정 화면](images/keycloak/12-account.png)
+
 ## 5. 운영
 
 ```bash
@@ -251,13 +261,14 @@ scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
 | 공개 주소 리다이렉트가 `http://`로 나감 | RequestRedirect에 scheme 미지정 → 요청 scheme(http, 터널 안쪽)을 따라감 | `scheme = "https"` |
 | `client_auth_method` 인자 없음 | provider 5.10에는 그 인자가 없음 | `extra_config = { clientAuthMethod = ... }` |
 | edge apply 자동 실행 거부 | 공개 DNS 변경이라 자동 권한 검사가 차단 | 사람이 직접 실행 |
+| 로그인 직후 `/token` 403 `Invalid origin`, 로그에 "Non-secure context" | Cloudflare는 `X-Forwarded-Proto: https`를 보내지만 **Envoy가 자기 연결(http) 기준으로 덮어씀** → Keycloak이 http로 판단해 https Origin과 불일치 | 공개 HTTPRoute에 `RequestHeaderModifier`로 `X-Forwarded-Proto: https` 고정 (그 호스트는 터널=https로만 들어옴) |
+| 계정 화면 "Something went wrong", `/account/...` 401 | `keycloak_default_roles`가 기본 역할을 **덮어씀** → `account/view-profile`·`manage-account`가 빠져 토큰에 aud=account 없음 | default_roles에 `account/*` 두 개를 다시 포함 |
+| 전체 장애 (prd·dev 502/530) | Docker VM 7.65GB에 여러 프로젝트 + Keycloak → swap 고갈 | Docker Desktop 메모리 20GB로 증설 ([작업 기록 #41, #43](07-worklog.md)) |
 
 ## 9. 다음
 
-> ⚠️ 2026-10-24: Docker VM 메모리 고갈 장애로 Keycloak을 `replicas=0`으로 줄여 둠 ([작업 기록 #41](07-worklog.md)). Docker Desktop 메모리 증설 후 `scripts/infra.sh identity apply`로 복구.
-
 - [x] `auth.claudharmony.io` DNS (edge apply, 사용자 실행) — 공개 경로 200, `/admin`·master 302 확인
-- [ ] 공개 로그인 화면 스크린샷 (Keycloak 복구 후)
+- [x] 공개 로그인 화면·로그인 후 계정 화면 확인 (스크린샷 4-4)
 - [ ] 소셜 로그인 키 등록 (Google·카카오부터)
 - [ ] 앱 연동 (앱 세션): web 로그인, api JWT 검증, console `admin` 역할 → Cloudflare Access 대신 Keycloak으로 콘솔 보호
 - [ ] SMTP (비밀번호 재설정·이메일 인증)

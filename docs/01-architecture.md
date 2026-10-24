@@ -22,7 +22,7 @@ flowchart LR
     subgraph OFFICE[사무실 — 이중 NAT, 포트포워딩 없음]
       subgraph MAC[MacBook · Docker Desktop]
         K8S[kind 클러스터<br/>claudharmony]
-        RUN[self-hosted runner ×5]
+        RUN[self-hosted runner<br/>infra · web · api]
       end
     end
 

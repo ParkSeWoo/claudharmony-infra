@@ -431,6 +431,21 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - `11-learning-guide` 신규: 10단계 커리큘럼(개념 → 우리 구성 → 확인 명령 → 실습 → 체크리스트) + 장애 사례 복기 표 + 다음 과제
 - 실습은 dev·읽기 전용만 (prd 변경 명령 없음)
 
+### 36. 정리 (사용자 요청 "불필요한 거 정리")
+
+| 대상 | 처리 | 되돌리기 |
+|------|------|----------|
+| Docker 이미지 `claudharmony/*` 31개 | **21개 삭제** — hello/hello-app 전부, 오래된 dev/prd 태그, console-initial. 남김: 배포 중 5개 + prd 롤백용 이전 버전(api `63e8dca`, web `05aa8f3`) + `:local`(api 세션 로컬용) | 다시 빌드 |
+| kind 노드 안 미사용 이미지 | `crictl rmi --prune` (worker 38→34) | 롤백 시 deploy.sh 가 kind load |
+| 빌드 캐시 | 24시간 지난 것만 prune (다른 프로젝트 캐시 보호) | — |
+| 구 `claudharmony-homepage` | 러너 서비스 중지·등록 해제·디렉토리 삭제, 저장소 **archive**, 로컬 클론 삭제(변경·미push 없음 확인) | GitHub 에서 unarchive |
+| `modules/docker/` (K8s 이전 Docker 모듈) | 삭제 | Git 이력 |
+| `setup-runner.sh` 기본 대상 | homepage → web, api, console | — |
+| prd `flyway_schema_history` | ⏳ Claude Code 권한 검사가 운영 DB 쓰기를 차단 → **사용자 직접 실행** 대기 | — |
+
+**문제**: 이미지 일괄 삭제가 조용히 실패 — `docker rmi $RM` 에서 **zsh 는 따옴표 없는 변수를 단어로 쪼개지 않음** → 줄바꿈 포함 한 덩어리로 전달. `while read` 로 하나씩 처리해서 해결
+**남겨 둔 것**: 다른 프로젝트 이미지·볼륨(airflow, qdrant, kind ch4), Atlas 임시 DB 컨테이너(재사용), Terraform state `.backup`
+
 ---
 
 ## 템플릿 (다음 작업용)

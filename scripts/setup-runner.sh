@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # 사무실 Mac 에 GitHub Actions self-hosted runner 를 등록하고 서비스(launchd)로 띄운다.
-# 사용법: scripts/setup-runner.sh [repo ...]   (기본: claudharmony-infra claudharmony-homepage)
+# 사용법: scripts/setup-runner.sh [repo ...]   (기본: claudharmony-infra web api console)
 # 필요: gh 로그인(repo 권한), 이 Mac 의 docker / terraform
 set -euo pipefail
 
 OWNER="ParkSeWoo"
 if [ $# -eq 0 ]; then
-  REPOS=(claudharmony-infra claudharmony-homepage)
+  REPOS=(claudharmony-infra claudharmony-web claudharmony-api claudharmony-console)
 else
   REPOS=("$@")
 fi
@@ -35,5 +35,6 @@ for REPO in "${REPOS[@]}"; do
 done
 
 echo
-gh api "repos/$OWNER/claudharmony-infra/actions/runners" --jq '.runners[] | "\(.name)\t\(.status)"'
-gh api "repos/$OWNER/claudharmony-homepage/actions/runners" --jq '.runners[] | "\(.name)\t\(.status)"'
+for REPO in "${REPOS[@]}"; do
+  gh api "repos/$OWNER/$REPO/actions/runners" --jq '.runners[] | "\(.name)\t\(.status)"'
+done

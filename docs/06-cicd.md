@@ -6,7 +6,8 @@
 |--------|------|------|-------------|
 | [claudharmony-web](https://github.com/ParkSeWoo/claudharmony-web) | private | 프론트 — SvelteKit 3 (Node 24), 외부 `/` | `main`* |
 | [claudharmony-api](https://github.com/ParkSeWoo/claudharmony-api) | private | 백엔드 — Spring Boot 4.1.2 / Java 25, 내부 전용 | `main`* |
-| [claudharmony-homepage](https://github.com/ParkSeWoo/claudharmony-homepage) | private | (구) hello-app — **dev/prd 에서 제거됨**, archive 예정 | `develop` |
+| [claudharmony-console](https://github.com/ParkSeWoo/claudharmony-console) | private | 관리자 콘솔 | `main` |
+| ~~claudharmony-homepage~~ | private | (구) hello-app — **2026-10-24 archive**, 러너 제거 | — |
 | [claudharmony-infra](https://github.com/ParkSeWoo/claudharmony-infra) | public | Terraform (클러스터/게이트웨이/환경), 배포 기록, 문서 | `main` |
 
 \* web/api 는 2026-10-24 현재 `main` 만 push 된 상태 — `develop` push 부터 dev 배포가 시작된다.
@@ -140,10 +141,10 @@ sequenceDiagram
 | 항목 | 값 |
 |------|----|
 | 위치 | `~/.claudharmony/runners/<repo>/` (저장소당 1개) |
-| 이름 | `office-mac-<repo>` (infra, homepage, api, web) |
+| 이름 | `office-mac-<repo>` (infra, web, api — console 은 등록 예정) |
 | 라벨 | `self-hosted`, `claudharmony-office` |
 | 실행 방식 | launchd 서비스 (`svc.sh`) — 로그인 시 자동 시작 |
-| 등록 | `scripts/setup-runner.sh [repo ...]` (인자 없으면 infra, homepage) |
+| 등록 | `scripts/setup-runner.sh [repo ...]` (인자 없으면 infra, web, api, console) |
 
 ```bash
 cd ~/.claudharmony/runners/claudharmony-homepage && ./svc.sh status

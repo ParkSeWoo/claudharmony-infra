@@ -22,8 +22,8 @@
 | 9 | Kubernetes v1.37 (kind) + Envoy Gateway 로 전환 | ✅ |
 | 10 | 인프라 자동 적용 워크플로 | ✅ (러너 등록 후 동작) |
 | 11 | self-hosted runner 등록 | ✅ (사용자 실행) |
-| 12 | 파이프라인 E2E — dev | ✅ `dev-c0184f6` 자동 배포 (기록 push 는 deploy key 필요) |
-| 13 | 파이프라인 E2E — prd | ⏳ deploy key 설정 후 |
+| 12 | 파이프라인 E2E — dev | ✅ `dev-c0184f6` 자동 배포 |
+| 13 | 파이프라인 E2E — prd | ✅ `20261024-c0184f6` 수동 배포 + 기록 자동 커밋 |
 
 ---
 
@@ -190,6 +190,20 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 - 다른 세션으로 보낸 공지 2건은 권한 모드 차이로 **보류 후 만료(미전달)** → 사용자 요청으로 재전송 (승인 대기)
 - prd 배포 테스트(`release/20261024` 생성 + Deploy prd 실행)는 Claude Code 권한 검사가 "운영 배포" 로 차단 → 전략대로 **사용자가 수동 실행**
+
+### 16. prd 배포 E2E 테스트 (사용자 요청으로 실행)
+
+1. `release/20261024` 브랜치 생성 (develop `c0184f6` 기준 — 홈페이지 작업 반영 전, 파이프라인 검증용)
+2. `gh workflow run deploy-prd.yml --ref release/20261024` → **success** (deploy ✓, reject skipped)
+3. 검증
+   - `http://localhost/version` → `{"version":"20261024-c0184f6","env":"prd"}`
+   - prd 터널 주소 → 같은 응답 (외부 접속 OK)
+   - infra 저장소에 `5944985 claudharmony-deploy: deploy(prd): hello-app=...:20261024-c0184f6 [skip ci]` — **deploy key 로 자동 커밋 성공**
+   - `[skip ci]` 라 Infra apply 워크플로는 실행되지 않음 ✓
+4. 가드 테스트: `develop` 에서 Deploy prd 실행 → **reject 잡 실패, deploy skipped**, prd 버전 그대로 ✓
+
+**남은 절차 (사용자)**: prd 확인 후 `release/20261024` → `main` PR merge, `main` → `develop` back-merge.
+(홈페이지 실제 릴리스는 다른 세션 작업이 develop 에 들어온 뒤 새 release 브랜치로)
 
 ---
 

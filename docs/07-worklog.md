@@ -342,6 +342,32 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 **배운 점**: k9s 가 "안 보이면" 먼저 로그 — 연결 실패와 빈 네임스페이스를 구분
 
+### 28. DB 선택 — PostgreSQL
+
+- 사용자 방향: **도메인은 앱에, DB 는 단순 저장·조회**. 향후 위치 기반·Redis·트렌드 크롤링·블로그 수집 알림·AI(전용 벡터 DB)·**대량 데이터**
+- 결론: 서비스 DB = **PostgreSQL + PostGIS**, 벡터 = **Qdrant(전용)**, 대량 트렌드 = **ClickHouse**, 원본 = 오브젝트 스토리지, 캐시 = Redis, 버퍼 = Redpanda → [데이터베이스 로드맵](09-database.md)
+- PG 를 고른 이유: K8s Operator(CloudNativePG) 성숙도 → 백업/복구 선언형, PostGIS, JSONB/부분 인덱스/전문검색(조회 도구), 이식성(RDS/Cloud SQL), 라이선스
+
+### 29. PostgreSQL 구축 (dev, prd)
+
+1. 버전 조사: CNPG **1.30.1**(chart 0.29.1, 2026-09-23), 이미지 `postgis:18.6-3.6.4-standard-trixie` (ghcr 태그 목록 페이지네이션으로 PG18 확인)
+2. `platform/database`: CNPG Operator (Helm) → CRD 11개 (`clusters`, `databaseroles`, `scheduledbackups` …)
+3. `kubectl explain cluster.spec.managed.roles / bootstrap.initdb` 로 1.30 스펙 확인 후 `modules/k8s/postgres` 작성
+   - initdb: DB `claudharmony`, owner `app`, `CREATE EXTENSION postgis`
+   - managed role `readonly` (`pg_read_all_data`, 연결 5) + Terraform 랜덤 비밀번호 Secret
+   - 첫 초안의 `GRANT ... TO readonly` 를 initdb SQL 에서 제거 — **initdb 시점엔 managed role 이 아직 없어 실패할 수 있음** → `inRoles` 로 대체
+   - `kubectl_manifest` `wait_for status.phase = "Cluster in healthy state"`
+4. `modules/k8s/app`: `secret_env` (Secret → 환경변수) 추가 / `modules/k8s/env`: `database` 변수, 카탈로그 `"database": true` → `SPRING_DATASOURCE_*` 주입
+5. 적용 전 확인: api `build.gradle` 에 JDBC/JPA 없음 → 환경변수 주입해도 무시됨(안전)
+6. dev apply → `Cluster in healthy state` (48초), 검증
+   - `PostgreSQL 18.6`, `postgis 3.6.4`, `shared_buffers 96MB`, `Asia/Seoul`
+   - `readonly`: `postgis_version()` 조회 OK, `CREATE TABLE` → `permission denied` ✓
+   - api Pod 에 `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` 주입, 정상 Running
+7. prd apply → healthy, 사이트 정상
+8. `scripts/db.sh`: port-forward + 접속 정보 출력 + **비밀번호 클립보드 복사** (화면 미출력). 로컬에 psql 이 없어 `postgres:18-alpine` 일회용 컨테이너로 검증 ✓
+
+**남은 것**: 백업(Barman Cloud → R2), api 에 JPA/Flyway (다른 세션), Docker 메모리 증설
+
 ---
 
 ## 템플릿 (다음 작업용)

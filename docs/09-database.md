@@ -1,0 +1,125 @@
+# 09. 데이터베이스 — PostgreSQL (CloudNativePG) 와 데이터 플랫폼 로드맵
+
+## 원칙
+
+| 위치 | 역할 |
+|------|------|
+| **애플리케이션 (api)** | 도메인 규칙·검증·트랜잭션 경계 |
+| **PostgreSQL** | 저장·조회만. **저장 프로시저/트리거/DB 함수에 업무 규칙 넣지 않음** |
+| **스키마** | api 저장소의 **Flyway 마이그레이션** (코드와 함께 버전 관리) |
+| **web** | DB 직접 접근 금지 — api 만 경유 |
+
+DB 는 언제든 갈아끼울 수 있는 저장소로 둔다 → 나중에 RDS / Cloud SQL 이전 시 접속 정보만 교체.
+
+## 지금 구성 (2026-10-24)
+
+| 항목 | 값 |
+|------|----|
+| Operator | **CloudNativePG 1.30.1** (Helm chart 0.29.1) — `platform/database`, ns `cnpg-system` |
+| 이미지 | `ghcr.io/cloudnative-pg/postgis:18.6-3.6.4-standard-trixie` — **PostgreSQL 18.6 + PostGIS 3.6.4** |
+| 환경 | dev, prd 각 Namespace 에 Cluster `pg` (인스턴스 1, 스토리지 5Gi) |
+| 메모리 | dev 384Mi / prd 512Mi (shared_buffers = 1/4) |
+| 설정 | `timezone=Asia/Seoul`, `max_connections=50`, 0.5초 이상 쿼리 로그 |
+| 확장 | `postgis` (initdb 시 생성) |
+| 외부 공개 | **없음** — 클러스터 안 api 만 접근 |
+
+### 만들어지는 것 (Namespace 마다)
+
+| 종류 | 이름 | 용도 |
+|------|------|------|
+| Service | `pg-rw` | 읽기·쓰기 (primary) — **앱은 이것** |
+| Service | `pg-ro` / `pg-r` | 읽기 전용 replica / 아무 인스턴스 (인스턴스 2개 이상일 때 의미) |
+| Secret | `pg-app` | 앱 계정 `app` — `username`, `password`, `jdbc-uri`, `uri` … (CNPG 자동 생성) |
+| Secret | `pg-readonly` | 조회 계정 `readonly` — Terraform 이 랜덤 생성, `pg_read_all_data` 역할 |
+| PVC | `pg-1` | 데이터 (kind `standard` = local-path) |
+
+### 계정
+
+| 계정 | 권한 | 쓰는 곳 |
+|------|------|---------|
+| `app` | DB `claudharmony` 소유자 (읽기·쓰기·DDL) | api, Flyway |
+| `readonly` | 모든 테이블 조회만 (`pg_read_all_data`), 연결 5개 제한 | DB 툴, 어드민 콘솔, 분석 |
+| `postgres` | 슈퍼유저 | 운영자만 (`kubectl exec`) |
+
+`readonly` 로 `CREATE TABLE` → `permission denied for schema public` 확인함.
+
+## 앱에 연결하기
+
+서비스 카탈로그에서 `"database": true` 인 서비스에 접속 정보가 자동 주입된다 (현재 `api`).
+
+```json
+"api": { "port": 8080, "database": true }
+```
+
+| 환경변수 | 값 |
+|----------|----|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://pg-rw.<env>.svc.cluster.local:5432/claudharmony` |
+| `SPRING_DATASOURCE_USERNAME` | Secret `pg-app` → `username` |
+| `SPRING_DATASOURCE_PASSWORD` | Secret `pg-app` → `password` |
+
+api 에 `spring-boot-starter-data-jpa`(또는 jdbc) + `org.postgresql:postgresql` + `flyway-database-postgresql` 를 추가하면 바로 연결된다.
+**의존성이 없으면 이 환경변수는 무시**된다 (2026-10-24 현재 api 는 DB 의존성 없음).
+
+## 로컬 DB 툴로 접속 — `scripts/db.sh`
+
+```bash
+scripts/db.sh dev            # readonly (기본) — 실수로 데이터 못 바꿈
+scripts/db.sh prd readonly
+scripts/db.sh dev app        # 쓰기 필요할 때만
+```
+
+- port-forward 를 열고 접속 정보를 보여준다 (dev `127.0.0.1:15432`, prd `127.0.0.1:25432`)
+- **비밀번호는 화면에 출력하지 않고 클립보드로 복사** → TablePlus / DBeaver / DataGrip 에 붙여넣기
+- 종료: Ctrl+C
+
+슈퍼유저로 바로 SQL: `kubectl -n dev exec -it pg-1 -c postgres -- psql -U postgres claudharmony`
+
+## 운영
+
+```bash
+scripts/infra.sh database status                       # Operator + 모든 Cluster
+kubectl -n dev get cluster pg                          # STATUS: Cluster in healthy state
+kubectl -n dev describe cluster pg                     # 이벤트
+kubectl -n dev logs pg-1 -c postgres | tail            # PG 로그 (JSON)
+kubectl top pods -n dev                                # 메모리
+```
+
+k9s: `:clusters.postgresql.cnpg.io` 또는 `:pods` 에서 `pg-1`.
+
+### 스펙 변경
+
+| 바꿀 것 | 위치 | 영향 |
+|---------|------|------|
+| 메모리·스토리지·인스턴스 수 | `envs/<env>/main.tf` 의 `database = { ... }` | Operator 가 롤링 적용. 스토리지는 늘리기만 가능 |
+| PostgreSQL 마이너 버전 | `modules/k8s/postgres` 의 `image` | Operator 가 롤링 업데이트 |
+| 확장 추가 | `extensions` (예: `postgis_topology`) | **initdb 때만 실행** → 기존 DB 는 `CREATE EXTENSION` 수동 또는 Flyway |
+
+### ⚠️ 데이터 보존 — 아직 백업 없음
+
+- PVC 는 kind 노드 컨테이너 안 디스크 → Pod/노드 재시작은 안전, **`cluster apply` 로 클러스터 재생성 시 데이터 소실**
+- 다음 작업: CNPG **Barman Cloud Plugin** 으로 Cloudflare R2(또는 MinIO)에 base backup + WAL 아카이브 → 클러스터 재생성 시 `bootstrap.recovery` 로 복구
+
+## 데이터 플랫폼 로드맵
+
+앞으로 붙일 기능(위치 기반, 트렌드 크롤링, 기술 블로그 수집·알림, AI)에 맞춘 저장소 분리:
+
+| 계층 | 저장소 | 데이터 | 단계 |
+|------|--------|--------|------|
+| 서비스 DB (OLTP) | **PostgreSQL + PostGIS** | 회원·게시글·설정·위치 원본 | ✅ 지금 |
+| 백업 | R2 / MinIO (Barman Cloud) | base backup + WAL | 다음 |
+| 캐시·실시간 | **Redis** | 캐시, GEO 주변 검색, 순위, Streams 큐 | 2 |
+| 원본 저장소 | **오브젝트 스토리지** (MinIO → R2/S3) | 크롤링 원본(Bronze), Parquet | 2 |
+| 워커 | 카탈로그에 CronJob / Worker 유형 | 크롤러, 수집기, 임베딩, 알림 | 3 |
+| 벡터 DB | **Qdrant** (전용) | 글·트렌드·블로그 임베딩 | 3~4 |
+| 분석 DB (OLAP) | **ClickHouse** | 전국 트렌드 (지역 × 연령 × 시간 × 키워드), 수억 건 | 4 |
+| 수집 버퍼 | **Redpanda** (Kafka 호환) | 크롤러 → 정제 사이 이벤트 | 4 |
+| 관측 | Prometheus + Grafana | 메트릭, 수집 실패 알림 | 5 |
+
+```
+크롤러(CronJob) ─원본→ 오브젝트 스토리지 (Bronze)
+      └─이벤트→ Redpanda → 정제/집계 → ClickHouse (Silver/Gold)
+                         └→ 임베딩 → Qdrant
+api (도메인) ── PostgreSQL / Redis ── 서비스는 Gold 집계 + 벡터 검색 결과만 조회
+```
+
+선행 조건: **Docker Desktop 메모리 8GB → 16~20GB** (현재 사용 ~5.5GB), 대량 데이터용 디스크(Mac 폴더 extraMounts 또는 R2).

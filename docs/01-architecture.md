@@ -55,9 +55,10 @@ flowchart LR
 |------|----------|-----------|-------------|------|
 | 1 | `platform/cluster` | kind 클러스터 (노드 2대) | 거의 안 바뀜 | 수동 |
 | 2 | `platform/gateway` | Envoy Gateway, GatewayClass, Gateway | 가끔 | main 머지 시 자동 |
+| 2.7 | `platform/database` | CloudNativePG Operator (PostgreSQL 엔진) | 가끔 | 수동 |
 | 2.6 | `platform/addons` | metrics-server (k9s CPU/MEM, `kubectl top`, 이후 HPA) | 가끔 | 수동 |
 | 2.5 | `platform/edge` | Cloudflare 터널·DNS(claudharmony.io) + cloudflared × 2 (ns `edge`) | 거의 안 바뀜 | 수동 |
-| 3 | `envs/dev`, `envs/prd` | Namespace, Deployment, Service, HTTPRoute, 터널 | 배포마다 | dev 자동 / prd 수동 |
+| 3 | `envs/dev`, `envs/prd` | Namespace, Deployment, Service, HTTPRoute, **PostgreSQL(pg)** | 배포마다 | dev 자동 / prd 수동 |
 
 각 단계는 **별도 Terraform state** (`~/.claudharmony/state/<stack>.tfstate`) 를 가진다.
 나눈 이유: CRD(GatewayClass 등)는 2단계에서 설치되므로 3단계가 plan 될 때 이미 존재해야 하고,
@@ -113,6 +114,7 @@ flowchart LR
 | 계정 / VPC | 프로젝트 | **Namespace** `dev`, `prd` | `modules/k8s/env` |
 | ECS Service / ASG | Cloud Run / MIG | **Deployment** (+ReplicaSet, Pod) | `modules/k8s/app` |
 | Target Group / 내부 DNS | Backend service | **Service** (ClusterIP) | `modules/k8s/app` |
+| RDS (PostgreSQL) | Cloud SQL | CloudNativePG Cluster `pg` (ns 별) | `modules/k8s/postgres` |
 | ECR | Artifact Registry | (지금) `kind load` / (나중) 레지스트리 | `scripts/deploy.sh` |
 | Internet Gateway + Route 53/ACM | Cloud DNS + 외부 IP/인증서 | Cloudflare Tunnel + DNS + 엣지 TLS | `platform/edge` |
 | Tags | Labels | Labels `app.kubernetes.io/*`, `claudharmony.io/*` | 전 모듈 |

@@ -2,6 +2,7 @@ terraform {
   required_providers {
     kubernetes = { source = "hashicorp/kubernetes" }
     kubectl    = { source = "alekc/kubectl" }
+    random     = { source = "hashicorp/random" }
   }
 }
 
@@ -21,19 +22,40 @@ resource "kubernetes_namespace_v1" "this" {
   }
 }
 
+# 데이터베이스 (환경별 1개)
+module "postgres" {
+  source = "../postgres"
+  count  = var.database == null ? 0 : 1
+
+  namespace    = kubernetes_namespace_v1.this.metadata[0].name
+  instances    = var.database.instances
+  storage_size = var.database.storage_size
+  memory_mb    = var.database.memory_mb
+}
+
+locals {
+  # database = true 인 서비스에 주입할 접속 정보 (비밀번호는 Secret 참조)
+  db_env = var.database == null ? {} : { SPRING_DATASOURCE_URL = module.postgres[0].jdbc_url }
+  db_secret_env = var.database == null ? {} : {
+    SPRING_DATASOURCE_USERNAME = { secret = module.postgres[0].app_secret, key = "username" }
+    SPRING_DATASOURCE_PASSWORD = { secret = module.postgres[0].app_secret, key = "password" }
+  }
+}
+
 module "service" {
   source   = "../app"
   for_each = local.deployed
 
-  name      = each.key
-  namespace = kubernetes_namespace_v1.this.metadata[0].name
-  image     = var.images[each.key]
-  port      = each.value.port
-  replicas  = each.value.replicas
-  memory_mb = each.value.memory_mb
-  env       = merge({ APP_ENV = var.environment }, each.value.env)
-  gateway   = var.gateway
-  route     = each.value.route_path == null ? null : { path = each.value.route_path, hostnames = var.hostnames }
+  name       = each.key
+  namespace  = kubernetes_namespace_v1.this.metadata[0].name
+  image      = var.images[each.key]
+  port       = each.value.port
+  replicas   = each.value.replicas
+  memory_mb  = each.value.memory_mb
+  env        = merge({ APP_ENV = var.environment }, each.value.database ? local.db_env : {}, each.value.env)
+  secret_env = each.value.database ? local.db_secret_env : {}
+  gateway    = var.gateway
+  route      = each.value.route_path == null ? null : { path = each.value.route_path, hostnames = var.hostnames }
 }
 
 module "tunnel" {

@@ -68,13 +68,14 @@ git checkout develop && git merge origin/main && git push      # back-merge
 | 4 | `GET /version` → `{env, version}` (외부 노출 서비스) | 배포 확인 |
 | 5 | 워크플로는 `shell: bash`(pipefail) + 배포 전 infra 클론 `pull --ff-only` | 앱 `.github/workflows/deploy-*.yml` |
 | 6 | 서비스 이름 = 카탈로그 key = Deployment/Service 이름 = 내부 DNS | `envs/*/services.auto.tfvars.json` |
+| 7 | `"database": true` 면 `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` 주입 (PostgreSQL `pg-rw`). 스키마는 앱의 Flyway | [데이터베이스](09-database.md) |
 
 ### 서비스 카탈로그 (dev / prd 동일)
 
 | 서비스 | 이미지 | 포트 | 외부 경로 | 메모리 | 저장소 |
 |--------|--------|------|-----------|--------|--------|
 | `web` | `claudharmony/web` | 3000 | `/` | 256Mi | claudharmony-web |
-| `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api |
+| `api` | `claudharmony/api` | 8080 | — (내부 전용, `http://api`) | 512Mi | claudharmony-api · **DB 연결** |
 
 
 - **web → api** 는 SSR 서버 간 호출: 같은 Namespace 의 Service `api` (포트 80 → 8080) — `http://api`

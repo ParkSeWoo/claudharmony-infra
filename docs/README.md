@@ -10,6 +10,7 @@
 | 06 | [CI/CD](06-cicd.md) | 브랜치 전략(develop→dev, release→prd), 파이프라인, 러너 |
 | 07 | [작업 기록](07-worklog.md) | 단계별 작업 · 문제 · 원인 · 해결 |
 | 08 | [도메인 연결](08-domain.md) | claudharmony.io + Cloudflare Tunnel — 설정 순서, 토큰 권한, 트러블슈팅 |
+| 09 | [데이터베이스](09-database.md) | PostgreSQL 18 + PostGIS (CloudNativePG), 계정·접속(db.sh), 데이터 플랫폼 로드맵 |
 
 브라우저로 보기: [`index.html`](index.html) — `python3 scripts/build_docs.py` 로 생성
 Obsidian 동기화: `python3 scripts/sync_obsidian.py`

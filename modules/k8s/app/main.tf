@@ -61,6 +61,19 @@ resource "kubernetes_deployment_v1" "this" {
             }
           }
 
+          dynamic "env" {
+            for_each = var.secret_env
+            content {
+              name = env.key
+              value_from {
+                secret_key_ref {
+                  name = env.value.secret
+                  key  = env.value.key
+                }
+              }
+            }
+          }
+
           resources {
             requests = { cpu = var.cpu_request, memory = "${var.memory_mb}Mi" }
             limits   = { memory = "${var.memory_mb}Mi" }

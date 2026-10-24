@@ -13,3 +13,12 @@ output "services" {
     }
   }
 }
+
+output "database" {
+  value = var.database == null ? null : {
+    host            = module.postgres[0].host
+    jdbc_url        = module.postgres[0].jdbc_url
+    app_secret      = module.postgres[0].app_secret
+    readonly_secret = module.postgres[0].readonly_secret
+  }
+}

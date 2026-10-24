@@ -35,7 +35,18 @@ variable "services" {
     replicas   = optional(number, 1)
     memory_mb  = optional(number, 512)
     env        = optional(map(string), {})
+    database   = optional(bool, false) # true 면 PostgreSQL 접속 정보(SPRING_DATASOURCE_*) 주입
   }))
+}
+
+variable "database" {
+  description = "환경 PostgreSQL (CloudNativePG). null 이면 만들지 않음"
+  type = object({
+    instances    = optional(number, 1)
+    storage_size = optional(string, "5Gi")
+    memory_mb    = optional(number, 512)
+  })
+  default = null
 }
 
 variable "images" {

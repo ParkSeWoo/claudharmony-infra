@@ -27,6 +27,15 @@ variable "env" {
   default = {}
 }
 
+variable "secret_env" {
+  description = "Secret 에서 읽는 환경 변수: 이름 → { secret, key }"
+  type = map(object({
+    secret = string
+    key    = string
+  }))
+  default = {}
+}
+
 variable "cpu_request" {
   type    = string
   default = "100m"

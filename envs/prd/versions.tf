@@ -10,6 +10,10 @@ terraform {
       source  = "alekc/kubectl"
       version = "~> 2.1"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # state 는 저장소 밖(~/.claudharmony/state/<env>.tfstate) — scripts/infra.sh 가 init 시 지정

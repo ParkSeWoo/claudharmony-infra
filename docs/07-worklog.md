@@ -614,6 +614,14 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **배운 점**: "apply 전에 pull"은 사람이 기억하는 규칙이 아니라 스크립트가 강제해야 한다. 같은 state를 여러 곳(러너·세션)이 바꾸면 잠금과 기록 확인이 함께 필요하다.
 
 ---
+### 50. prd 배포 — 홈페이지 로그인 + 관리자 링크 운영 반영
+
+- 앱 세션이 release/20261025로 운영 배포 (사용자 승인): api `20261025-e0d27f1`(DB schema prd → Deploy prd), web `20261025-197c9bc`
+- 배포가 prd 전체를 apply하면서 #47에서 보류했던 prd Keycloak 환경변수도 함께 반영 → Pod 안 api 3개, web 4개 확인
+- 확인: https://claudharmony.io 200, `/auth/login` → `auth.claudharmony.io/realms/claudharmony` (redirect_uri `https://claudharmony.io/auth/callback`)
+- 흐름: 홈페이지 로그인(admin 계정) → 헤더 '관리자' → https://console.claudharmony.io (Keycloak 세션으로 SSO)
+
+---
 
 ## 템플릿 (다음 작업용)
 

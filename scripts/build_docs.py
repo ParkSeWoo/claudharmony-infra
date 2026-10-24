@@ -5,7 +5,7 @@ import pathlib
 
 DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 pages = [{"id": p.stem, "md": p.read_text(encoding="utf-8")}
-         for p in sorted(DOCS.glob("0*.md"))]
+         for p in sorted(DOCS.glob("[0-9][0-9]-*.md"))]
 
 TEMPLATE = """<!doctype html>
 <html lang="ko">
@@ -60,7 +60,7 @@ renderer.code = (code, lang) => lang === 'mermaid'
 renderer.table = (h, b) => `<div class="tbl"><table><thead>${h}</thead><tbody>${b}</tbody></table></div>`;
 // md 간 링크(01-architecture.md) → 페이지 전환
 renderer.link = (href, title, text) => {
-  const m = href && href.match(/^(0[^/]*)\\.md$/);
+  const m = href && href.match(/^([0-9]{2}[^/]*)\\.md$/);
   return m ? `<a href="#${m[1]}">${text}</a>` : `<a href="${href}">${text}</a>`;
 };
 marked.setOptions({renderer});

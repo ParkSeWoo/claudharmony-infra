@@ -18,7 +18,7 @@ VAULT = pathlib.Path(CONF["obsidian_dir"])
 
 subprocess.run([sys.executable, str(ROOT / "scripts/build_docs.py")], check=True)
 
-pages = sorted(DOCS.glob("0*.md"))
+pages = sorted(DOCS.glob("[0-9][0-9]-*.md"))
 # 01-architecture.md → "01 아키텍처" (첫 줄 '# 01. 아키텍처' 에서 이름을 만든다)
 titles = {}
 for p in pages:
@@ -28,7 +28,7 @@ for p in pages:
 VAULT.mkdir(parents=True, exist_ok=True)
 for p in pages:
     md = p.read_text(encoding="utf-8")
-    md = re.sub(r"\[([^\]]+)\]\((0[^)/]+)\.md\)", lambda m: f"[[{titles[m.group(2)]}|{m.group(1)}]]", md)
+    md = re.sub(r"\[([^\]]+)\]\(([0-9]{2}[^)/]+)\.md\)", lambda m: f"[[{titles[m.group(2)]}|{m.group(1)}]]", md)
     for k, v in CONF.get("replacements", {}).items():
         md = md.replace(k, v)
     md = re.sub(r"^> 이 저장소는 \*\*public\*\*.*?\n(> .*\n)*", "> 🔒 개인 노트 — 실제 IP / MAC 포함 (GitHub 문서는 placeholder).\n", md, flags=re.M)
@@ -37,7 +37,7 @@ for p in pages:
 
 # 이름이 바뀐 옛 노트 정리 (MOC 와 html 은 유지)
 keep = {f"{t}.md" for t in titles.values()} | {"00 인프라 구성 (MOC).md"}
-for old in VAULT.glob("0*.md"):
+for old in VAULT.glob("[0-9][0-9] *.md"):
     if old.name not in keep:
         old.unlink()
 

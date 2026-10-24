@@ -6,7 +6,7 @@ AWS/GCP 콘솔처럼 사무실 Kubernetes 인프라를 한 화면에서 보는 �
 | 주소 | 상태 |
 |------|------|
 | http://console.localhost | ✅ 사무실 Mac |
-| https://console.claudharmony.io | ⏳ Cloudflare Access(로그인) 붙인 뒤 공개 — 토큰에 Access 쓰기 권한 필요 |
+| https://console.claudharmony.io | ⏳ Keycloak 로그인 적용 완료(2026-10-25). 관리자 첫 로그인 확인 후 `edge apply`로 DNS 공개 |
 
 ## 1단계 — 조회 전용 (2026-10-24)
 
@@ -18,6 +18,22 @@ AWS/GCP 콘솔처럼 사무실 Kubernetes 인프라를 한 화면에서 보는 �
 
 - 화면 갱신은 상단 **새로고침 버튼**으로만 (자동 갱신은 사용자 요청으로 보류). 배포 이력은 GitHub 비인증 API 2분 캐시
 - 상태를 바꾸는 엔드포인트는 **없음**
+
+## 로그인 — Keycloak (2026-10-25)
+
+- 홈페이지와 같은 prd realm(`claudharmony`)의 client `console`로 로그인. **realm 역할 `admin`이 있는 사람만** 볼 수 있음 (그 외 403)
+- 홈페이지에서 이미 로그인했다면 Keycloak 세션이 있어 콘솔은 다시 묻지 않고 열림 (SSO)
+- 관리자 계정: prd realm `admin` (Terraform `platform/realms`, admin 역할). 임시 비밀번호 → 첫 로그인 때 변경
+  ```bash
+  kubectl -n identity get secret keycloak-service-admin -o jsonpath='{.data.password}' | base64 -d | pbcopy
+  ```
+- 앱 구현 (claudharmony-console `security/`):
+  - Spring Security `oauth2Login`. client 등록은 **discovery 없이 직접** — 기동 때 인터넷 주소를 부르지 않아 터널 장애 때도 콘솔이 뜬다
+  - 브라우저가 가는 주소(로그인·로그아웃)는 공개 주소, 토큰 교환·키·사용자 정보는 클러스터 안 주소. ID 토큰 `iss`는 공개 주소와 비교
+  - 역할은 ID 토큰 `roles` claim (`platform/realms`의 `realm-roles` 매퍼) → `ROLE_admin`
+  - 프로필 `keycloak`이 없으면 **모든 요청 거부** (fail-closed). 로컬에서만 `console.auth.local-dev=true`
+- 인프라 연결: `envs/console/services.auto.tfvars.json` — `SPRING_PROFILES_ACTIVE=keycloak` + Secret `keycloak-console` 4개
+- 공개 도메인은 HTTPRoute `console-public`에서 `X-Forwarded-Proto: https` 고정 → `{baseUrl}`이 https가 되어 redirect URI가 맞음
 
 ## 구조
 

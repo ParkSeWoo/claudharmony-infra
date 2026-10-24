@@ -580,6 +580,22 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - **prd apply는 자동 권한 검사가 운영 배포로 분류해 거부** → 사용자 실행 대기 (다음 prd 앱 배포 때도 함께 반영됨)
 
 ---
+### 48. 홈페이지 로그인 → 관리자 콘솔 (console.claudharmony.io)
+
+사용자: "홈페이지에 로그인했을 때 어드민 페이지 접속되게" → 대상은 `console.claudharmony.io`.
+
+1. **공개 도메인 HTTPRoute 분리** (`modules/k8s/app`): `*.localhost`(http)는 기존 route, 공개 도메인은 `<name>-public` route에서 `X-Forwarded-Proto: https` 고정. 호스트 지정이 없는 prd catch-all은 그대로
+   - 이유: Envoy가 XFP를 http로 덮어써서 Spring `{baseUrl}`(OAuth2 redirect_uri)이 http가 됨 → Keycloak redirect URI 불일치
+   - 적용: dev(web-public), console(console-public). dev·localhost·prd 모두 200 확인
+   - 교훈 재확인: 적용 전 `git pull` — 앱 세션 배포 기록이 그새 3건 쌓여 있었음
+2. **Keycloak** (`platform/realms`): console client에 realm 역할 매퍼(claim `roles`, ID 토큰), prd realm 관리자 `admin`(admin 역할, 임시 비밀번호, Secret `identity/keycloak-service-admin`)
+3. **콘솔 앱** (`claudharmony-console` d67c748): Keycloak 로그인, admin만, 설정이 없으면 전부 거부. 상단에 사용자·로그아웃
+4. **배포**: `deploy.sh console console claudharmony/console:console-d67c748` (콘솔 저장소 러너가 없어 수동. main push 워크플로는 pending)
+5. **확인**: 비로그인 → Keycloak으로 이동, 관리자 로그인 → 비밀번호 변경 화면까지 정상
+   - admin 역할로 콘솔 화면까지 들어가는 확인은, 임시 확인 계정에 운영 realm 권한을 주는 작업이 자동 권한 검사에서 거부됨 → 사용자가 직접 첫 로그인으로 확인
+6. **DNS**: `platform/edge` hostnames에 `console.claudharmony.io` 추가 (plan: DNS 1, 터널 설정 1). 적용은 사용자 확인 후 사용자가 실행
+
+---
 
 ## 템플릿 (다음 작업용)
 

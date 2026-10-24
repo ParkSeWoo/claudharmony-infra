@@ -14,7 +14,8 @@
 | 08 | [도메인 연결](08-domain.md) | claudharmony.io + Cloudflare Tunnel — 설정 순서, 토큰 권한, 트러블슈팅 |
 | 09 | [데이터베이스](09-database.md) | PostgreSQL 18 + PostGIS (CloudNativePG), 계정·접속(db.sh), 데이터 플랫폼 로드맵 |
 | 10 | [관리자 콘솔](10-console.md) | 조회 화면, 구조, 최소 권한(RBAC), Access 보호, 로드맵 |
-| 11 | [학습 가이드](11-learning-guide.md) | 컨테이너 → 클러스터 → 워크로드 → Gateway → 외부 공개 → Terraform → DB → CI/CD → 운영 → 장애 사례, 단계별 확인 명령·실습 |
+| 11 | [학습 가이드](11-learning-guide.md) | 컨테이너 → 클러스터 → 워크로드 → Gateway → 외부 공개 → Terraform → DB → 인증 → CI/CD → 운영 → 장애 사례, 단계별 확인 명령·실습 |
+| 12 | [인증 서버](12-identity.md) | Keycloak — 개념(OIDC·realm·client), 공개 범위, Terraform 두 스택, 스크린샷, 앱 연동 Secret 계약, 소셜 로그인 |
 
 브라우저로 보기: [`index.html`](index.html) — `python3 scripts/build_docs.py` 로 생성
 Obsidian 동기화: `python3 scripts/sync_obsidian.py`

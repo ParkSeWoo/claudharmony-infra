@@ -8,6 +8,7 @@
 import json
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
@@ -45,4 +46,8 @@ html = (DOCS / "index.html").read_text(encoding="utf-8")
 for k, v in CONF.get("replacements", {}).items():
     html = html.replace(k, v)
 (VAULT / "인프라 문서.html").write_text(html, encoding="utf-8")
+
+# 스크린샷 등 이미지 — md·html 모두 images/... 상대 경로로 참조
+if (DOCS / "images").is_dir():
+    shutil.copytree(DOCS / "images", VAULT / "images", dirs_exist_ok=True)
 print(f"synced {len(pages)} pages + html → {VAULT}")

@@ -22,6 +22,7 @@ flowchart LR
     S4 --> S5[5 외부 공개<br/>NAT · Tunnel · DNS · TLS]
     S3 --> S6[6 IaC<br/>Terraform 스택·모듈·state]
     S3 --> S7[7 데이터<br/>CloudNativePG · Atlas]
+    S7 --> S7B[7.5 인증<br/>Keycloak · OIDC]
     S6 --> S8[8 CI/CD<br/>브랜치 · 러너 · deploy.sh]
     S8 --> S9[9 운영<br/>k9s · 로그 · 메트릭 · 콘솔]
     S9 --> S10[10 장애 사례<br/>작업 기록]
@@ -36,6 +37,7 @@ flowchart LR
 | 5 | 외부 공개 (이중 NAT, Tunnel, DNS, TLS) | 1시간 |
 | 6 | Terraform 구조 | 1~2시간 |
 | 7 | 데이터 (PostgreSQL Operator, Atlas) | 1시간 |
+| 7.5 | 인증 (Keycloak, OIDC) | 1시간 |
 | 8 | CI/CD | 1시간 |
 | 9 | 운영 도구 | 30분 |
 | 10 | 장애 사례 복기 | 1시간 |
@@ -185,6 +187,26 @@ scripts/db-schema.sh dev plan ~/workspace/claudharmony-api/db/schema.sql
 **④ 실습 (plan 만)**: schema.sql 복사본에 컬럼을 하나 추가/삭제해서 `plan` → `ADD COLUMN` / ⚠️ 위험 변경 감지 보기.
 
 **⑤ 체크**: □ 왜 앱 기동 시 자동 마이그레이션을 운영에서 금지했나 □ `DB schema prd` → `Deploy prd` 순서와 `check` □ readonly 계정이 쓰기를 못 하는 원리(`pg_read_all_data`) □ 아직 정기 백업이 없다는 위험
+
+---
+
+## 7.5단계 — 인증 (Keycloak · OIDC)
+
+**① 개념**: 로그인을 앱마다 만들지 않고 **IdP**(Keycloak)에 맡긴다. 앱은 OIDC로 토큰을 받고, api는 토큰 서명(JWKS)·`iss`·`aud`만 검증한다. realm = 사용자·설정이 완전히 분리되는 단위.
+
+**② 우리 구성**: `platform/identity`(서버, Namespace `identity`, 전용 DB) → `platform/realms`(Keycloak provider로 realm·client·역할·계정, 앱 Namespace에 `keycloak-*` Secret). 인터넷에는 로그인 경로만, 관리 콘솔은 `auth.localhost`. 상세 [인증 서버](12-identity.md).
+
+**③ 확인**
+```bash
+scripts/infra.sh identity status
+curl -s -H 'Host: auth.localhost' http://127.0.0.1/realms/claudharmony-dev/.well-known/openid-configuration | python3 -m json.tool | head
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' -H 'Host: auth.claudharmony.io' http://127.0.0.1/admin/   # 302 → 공개 주소에서 관리 콘솔 차단
+kubectl -n dev get secret keycloak-api -o jsonpath='{.data.issuer-uri}' | base64 -d; echo
+```
+
+**④ 실습**: dev 사용자 `tester`로 토큰 받아 보기 — 관리 콘솔 → `claudharmony-dev` → Clients → web → Client scopes → Evaluate → `tester` 선택 → Generated access token에서 `iss`, `aud`, `realm_access.roles` 확인.
+
+**⑤ 체크**: □ 서버와 설정을 왜 다른 Terraform 스택으로 나눴나 □ issuer는 공개 주소인데 JWKS는 왜 클러스터 안 주소로 받나 □ redirect URI 제한이 없으면 무슨 일이 생기나 □ master realm을 인터넷에 열지 않는 이유
 
 ---
 

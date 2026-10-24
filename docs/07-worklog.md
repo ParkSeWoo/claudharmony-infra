@@ -471,6 +471,36 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 **배운 점**: 운영 DB 에 쓰는 일회성 명령은 사람이 `!` 로 직접 실행 — 자동화 도구가 운영 데이터를 바꾸지 않게 하는 안전장치가 제대로 동작한 것
 
+### 40. 인증 서버 Keycloak 추가
+
+사용자 요청: "키클락 추가 — 다양한 로그인 인증 서비스 관리, 내 시스템과 연동" + 블로그(스크린샷). 앱 연동은 앱 세션 담당 → 인프라만.
+
+1. 버전: Keycloak `26.7.5`(2026-09-30, 2주 이상 지난 최신), Terraform provider `keycloak/keycloak ~> 5.10.0`
+2. `platform/identity` — Namespace `identity`, 전용 CNPG `pg`(DB `keycloak`, 2Gi, 256Mi), bootstrap **client**(사람 계정 대신 client_credentials), Deployment(`start`, Recreate, 관리 포트 9000 probe), Service, HTTPRoute 2개
+   - 공개 `auth.claudharmony.io`: `/realms/claudharmony`, `/realms/claudharmony-dev`, `/resources`만 → 나머지는 https://claudharmony.io/ 로 302
+   - 관리 `auth.localhost`: 전체 (터널이 받지 않는 호스트 = 사무실 Mac 전용)
+3. `platform/realms` — realm `claudharmony`(prd)/`claudharmony-dev`(dev), 역할 `user`(기본)/`admin`, client `web`(confidential+PKCE, redirect URI 제한, aud=api 매퍼)/`api`(bearer-only)/`console`(prd), master 관리자 `claudharmony-admin`, dev `tester`, 앱 Namespace에 Secret `keycloak-web|api|console|tester` — 27개 리소스
+4. 소셜 로그인 `social.tf` (Google·GitHub·카카오) — `~/.claudharmony/identity.env` 값이 있을 때만 생성. 가짜 값으로 **plan만** 검증(6개 생성 예정 확인)
+5. `infra.sh`: 스택 `identity`, `realms` 추가, realms는 실행 중에만 port-forward(18080) + bootstrap 비밀 주입. CI 수동 실행 목록에도 추가
+6. `platform/edge` hostnames에 `auth.claudharmony.io` 추가 — plan: DNS 1 추가, 터널 설정 1 변경. **apply는 자동 권한 검사가 거부(공개 DNS 변경)** → 사용자 실행 대기
+7. 확인 (Gateway에 Host 헤더로): 공개 realm 200, `/admin`·`/realms/master`·`/` 302 → https://claudharmony.io/, issuer `https://auth.claudharmony.io/realms/claudharmony`
+8. 관리 콘솔 스크린샷 9장 (Playwright + 로컬 Chrome for Testing) → `docs/images/keycloak/`, 문서 [12. 인증 서버](12-identity.md), Obsidian 동기화에 이미지 복사 추가
+9. 메모리 사용: Keycloak 약 560Mi, DB 73Mi
+
+**문제 1**: Keycloak 재시작 2회 — `Connection to pg-rw.identity.svc:5432 refused`
+**원인**: DB 출력값(jdbc_url)은 계산만으로 알 수 있어 Terraform이 Deployment를 DB와 동시에 만듦
+**해결**: `depends_on = [module.db]`
+
+**문제 2**: 관리 콘솔 빈 화면 — `https://auth.claudharmony.io/realms/master/.../3p-cookies` 요청 실패
+**원인**: `KC_HOSTNAME_ADMIN`은 콘솔 화면 주소만 바꿈. master realm 로그인은 여전히 공개 주소로 가는데, 그 경로는 일부러 막아 둠
+**해결**: master realm **Frontend URL**만 `http://auth.localhost`로 (`terraform_data` + REST PUT, master realm 전체를 Terraform으로 가져오면 기본값으로 덮어쓸 위험)
+
+**문제 3**: 공개 주소 리다이렉트가 `http://claudharmony.io/` → `RequestRedirect`에 `scheme = "https"` 명시 (터널 안쪽 요청은 http)
+
+**문제 4**: `*.localhost`는 브라우저만 127.0.0.1로 풀어 줌(macOS 시스템 DNS·Terraform은 못 풂) → realms 스택은 port-forward
+
+**배운 점**: 인증 서버는 "공개할 경로"를 먼저 정한다. 토큰 issuer는 하나(공개 주소)로 고정하고, 서버끼리 통신만 클러스터 안 주소로.
+
 ---
 
 ## 템플릿 (다음 작업용)

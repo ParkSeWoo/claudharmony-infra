@@ -6,6 +6,7 @@ name: Infra apply
 #   envs/prd/**                      → 자동 X (운영 보호) — Run workflow 로 prd 선택
 #   platform/cluster/**              → 자동 X (kind 는 재생성됨) — Run workflow 로 cluster 선택
 #   platform/edge/**                 → 자동 X (도메인/DNS) — Run workflow 로 edge 선택 (러너 Mac 의 ~/.claudharmony/cloudflare.env 사용)
+#   platform/identity|realms/**      → 자동 X (로그인 서버) — Run workflow 로 identity / realms 선택
 # 앱 배포(deploy.sh)도 해당 환경 전체를 apply 하므로, main 의 인프라 변경은 다음 배포 때도 반영된다.
 # deploy.sh 가 남기는 images 기록 커밋은 [skip ci] 라 여기서 다시 돌지 않는다.
 on:
@@ -20,7 +21,7 @@ on:
       stack:
         description: "적용할 스택"
         type: choice
-        options: [dev, prd, console, gateway, edge, addons, database, cluster]
+        options: [dev, prd, console, gateway, edge, addons, database, identity, realms, cluster]
         default: dev
 
 jobs:

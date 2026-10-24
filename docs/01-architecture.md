@@ -83,11 +83,16 @@ flowchart TB
       subgraph KS[kube-system]
         MS[metrics-server]
       end
+      subgraph IDN[identity]
+        KC[Keycloak 26.7] --> KPG[(pg · DB keycloak)]
+      end
       CFD --> GW
+      GW -->|auth.claudharmony.io /realms/공개 realm<br/>auth.localhost 전체| KC
       GW -->|hostnames 없음 = 기본| PW
       GW -->|dev.claudharmony.io<br/>dev.localhost| DW
       GW -->|console.localhost| C
-      OP -. 관리 .-> PPG & DPG
+      OP -. 관리 .-> PPG & DPG & KPG
+      PW & DW -. OIDC .-> KC
       C -. 조회 .-> PRD & DEV
     end
 ```
@@ -98,6 +103,7 @@ flowchart TB
 | `edge` | cloudflared ×2, 터널 토큰 Secret | `platform/edge` |
 | `cnpg-system` | CloudNativePG Operator | `platform/database` |
 | `kube-system` | metrics-server (+ K8s 기본 구성요소) | `platform/addons` |
+| `identity` | Keycloak, 전용 PostgreSQL `pg`(DB `keycloak`), HTTPRoute 공개/관리 | `platform/identity` (+ 설정 `platform/realms`) |
 | `prd` / `dev` | web, api, PostgreSQL `pg` (Service `pg-rw/ro/r`, Secret `pg-app/pg-readonly`) | `envs/prd`, `envs/dev` |
 | `console` | 관리자 콘솔, ServiceAccount + 읽기 전용 ClusterRole | `envs/console` |
 
@@ -162,9 +168,12 @@ flowchart TB
     C1 --> C3[2.5 · platform/edge<br/>터널 · DNS · Access]
     C1 --> C4[2.6 · platform/addons<br/>metrics-server]
     C1 --> C5[2.7 · platform/database<br/>CloudNativePG]
+    C2 & C5 --> I1[2.8 · platform/identity<br/>Keycloak]
+    I1 --> I2[2.9 · platform/realms<br/>realm · client · Secret]
     C2 & C3 & C5 --> E1[3 · envs/dev]
     C2 & C3 & C5 --> E2[3 · envs/prd]
     C2 --> E3[3 · envs/console]
+    E1 & E2 & E3 --> I2
 ```
 
 | 스택 | 만드는 것 | provider | 적용 |
@@ -174,6 +183,8 @@ flowchart TB
 | `platform/edge` | Cloudflare 터널·ingress·DNS(·Access), cloudflared ×2 | cloudflare, kubernetes | 수동 (토큰 필요) |
 | `platform/addons` | metrics-server | helm | 수동 |
 | `platform/database` | CloudNativePG Operator | helm | 수동 |
+| `platform/identity` | Keycloak (Deployment·Service·HTTPRoute) + 전용 DB | kubernetes, kubectl | 수동 |
+| `platform/realms` | realm·role·client·계정, 앱 Namespace에 `keycloak-*` Secret | **keycloak**, kubernetes | 수동 (port-forward) |
 | `envs/dev`, `envs/prd` | Namespace, web/api (Deployment·Service·HTTPRoute), PostgreSQL | kubernetes, kubectl | dev 자동 / prd 수동, 앱 배포 시 |
 | `envs/console` | 콘솔 + RBAC | kubernetes, kubectl | 콘솔 배포 시 |
 
@@ -193,7 +204,8 @@ flowchart TB
 | 경계 | 장치 |
 |------|------|
 | 인터넷 → 사무실 | 들어오는 포트 없음. Cloudflare 터널만 (TLS 는 엣지) |
-| 콘솔 공개 주소 | Cloudflare Access 이메일 로그인 (⏳ 토큰 권한 추가 후) |
+| 콘솔 공개 주소 | Cloudflare Access 이메일 로그인 (⏳ 토큰 권한 추가 후) → 이후 Keycloak `admin` 역할로 대체 검토 |
+| 로그인 | Keycloak — 인터넷에는 `/realms/<공개 realm>`·`/resources`만, `/admin`·master realm은 `auth.localhost`(사무실 Mac) 전용 — [인증 서버](12-identity.md) |
 | 앱 → DB | 클러스터 내부만. 앱 계정 `app`, 조회 계정 `readonly`, 비밀번호는 Secret |
 | 콘솔 → K8s | ServiceAccount 읽기 전용, **Secret 접근 불가** |
 | 러너 → infra 저장소 | 저장소 하나 전용 SSH deploy key (443 포트) |
@@ -210,6 +222,7 @@ flowchart TB
 | cloudflared | 2025.10.0 |
 | metrics-server chart | 3.14.0 |
 | Atlas | 1.3.3-community |
+| Keycloak / Terraform provider | 26.7.5 / keycloak 5.10 |
 | Terraform / providers | 1.15 / kubernetes 3.3, helm 3.x, kubectl 2.x, cloudflare 5.27 |
 | 앱 | web SvelteKit 3 (Node 24) · api Spring Boot 4.1.2 (Java 25) · console Spring Boot 4.1.2 |
 

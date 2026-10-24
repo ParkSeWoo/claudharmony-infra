@@ -75,6 +75,7 @@ scripts/setup-runner.sh            # GitHub Actions self-hosted runner 등록
 | 외부 주소 | `scripts/infra.sh prd url` → https://claudharmony.io |
 | 접속 점검 | `scripts/infra.sh prd check` |
 | 현재 배포 버전 | `curl http://localhost/version` , `curl http://dev.localhost/version` |
+| 로그인 서버 | 관리 콘솔 http://auth.localhost/admin/ (계정 `claudharmony-admin`, 비밀번호는 `kubectl -n identity get secret keycloak-admin -o jsonpath='{.data.password}' \| base64 -d \| pbcopy`) — [인증 서버](12-identity.md) |
 | DB 접속 | `scripts/db.sh up` 한 번 → `scripts/db.sh psql dev` / IntelliJ·TablePlus 는 `127.0.0.1:15432(dev)·25432(prd)` — [데이터베이스](09-database.md) |
 | Pod 안 들어가기 | `kubectl -n dev exec -it deploy/hello-app -- bash` |
 | 롤백 (이전 ReplicaSet) | `kubectl -n prd rollout undo deploy/hello-app` → **이후 images.auto.tfvars.json 도 맞춰야 함** (안 그러면 다음 apply 때 되돌아감) |

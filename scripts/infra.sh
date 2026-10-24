@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 # 사용법: scripts/infra.sh <stack> <command>
-#   stack  : cluster | gateway | edge | addons | database | dev | prd | console
-#            (cluster/gateway/edge/addons/database = platform/*, dev/prd = envs/*)
+#   stack  : cluster | gateway | edge | addons | database | identity | realms | dev | prd | console
+#            (cluster/gateway/edge/addons/database/identity/realms = platform/*, dev/prd/console = envs/*)
 #   command: init | plan | apply | destroy | status | logs <svc> | url | check
 #   예) scripts/infra.sh cluster apply     # 1단계: kind 클러스터
 #       scripts/infra.sh gateway apply     # 2단계: Envoy Gateway
 #       scripts/infra.sh edge apply        # 2.5단계: Cloudflare 터널 + DNS (claudharmony.io)
+#       scripts/infra.sh identity apply    # 인증 서버 Keycloak
+#       scripts/infra.sh realms apply      # Keycloak realm·client·계정 (Keycloak provider)
 #       scripts/infra.sh dev apply         # 3단계: dev 워크로드
 #       scripts/infra.sh prd url
 # CI 에서는 AUTO_APPROVE=1 로 apply 확인 프롬프트를 건너뛴다.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_NAME="${1:?stack 필요: cluster | gateway | edge | addons | database | dev | prd | console}"
+ENV_NAME="${1:?stack 필요: cluster | gateway | edge | addons | database | identity | realms | dev | prd | console}"
 CMD="${2:-plan}"
 case "$ENV_NAME" in
-  cluster|gateway|edge|addons|database) TF_DIR="$ROOT/platform/$ENV_NAME" ;;
+  cluster|gateway|edge|addons|database|identity|realms) TF_DIR="$ROOT/platform/$ENV_NAME" ;;
   *)               TF_DIR="$ROOT/envs/$ENV_NAME" ;;
 esac
 export KUBECONFIG="${KUBECONFIG_CLAUDHARMONY:-$HOME/.claudharmony/kubeconfig}"
@@ -31,6 +33,25 @@ if [ "$ENV_NAME" = edge ]; then
   # 콘솔 로그인 허용 이메일 (공개 저장소에 두지 않음) → JSON 배열
   TF_VAR_console_allowed_emails="$(python3 -c 'import json,os;print(json.dumps([e.strip() for e in os.environ.get("CONSOLE_ALLOWED_EMAILS","").split(",") if e.strip()]))')"
   export TF_VAR_console_allowed_emails
+fi
+# realms 스택은 Keycloak 관리 API 를 직접 부른다. *.localhost 는 브라우저만 풀어 주므로
+# 실행하는 동안만 Service 로 port-forward 하고, 첫 기동 때 만든 bootstrap client 로 인증한다.
+if [ "$ENV_NAME" = realms ] && [[ "${2:-plan}" =~ ^(plan|apply|destroy)$ ]]; then
+  KC_PORT=18080
+  k -n identity port-forward svc/keycloak "$KC_PORT:80" >/dev/null 2>&1 &
+  KC_PF=$!
+  trap 'kill $KC_PF 2>/dev/null || true' EXIT
+  for _ in $(seq 1 20); do nc -z 127.0.0.1 "$KC_PORT" 2>/dev/null && break; sleep 0.5; done
+  export TF_VAR_keycloak_url="http://127.0.0.1:$KC_PORT"
+  TF_VAR_keycloak_client_secret="$(k -n identity get secret keycloak-bootstrap -o jsonpath='{.data.client-secret}' | base64 -d)"
+  export TF_VAR_keycloak_client_secret
+  # 소셜 로그인 키 (저장소 밖, chmod 600) — GOOGLE_/GITHUB_/KAKAO_ CLIENT_ID·CLIENT_SECRET. 없으면 소셜 로그인 없음
+  ID_ENV="$HOME/.claudharmony/identity.env"
+  if [ -r "$ID_ENV" ]; then set -a; . "$ID_ENV"; set +a; fi
+  TF_VAR_social="$(python3 -c 'import json,os
+print(json.dumps({n:{"client_id":os.environ[f"{n.upper()}_CLIENT_ID"],"client_secret":os.environ.get(f"{n.upper()}_CLIENT_SECRET","")}
+  for n in ("google","github","kakao") if os.environ.get(f"{n.upper()}_CLIENT_ID")}))')"
+  export TF_VAR_social
 fi
 STATE_DIR="${CLAUDHARMONY_STATE_DIR:-$HOME/.claudharmony/state}"
 
@@ -56,6 +77,7 @@ case "$CMD" in
       edge)    k -n edge get deploy,pods ;;
       addons)  k -n kube-system get deploy metrics-server; k top nodes ;;
       database) k -n cnpg-system get deploy,pods; k get clusters.postgresql.cnpg.io -A ;;
+      identity|realms) k -n identity get deploy,pods,svc,httproute,clusters.postgresql.cnpg.io ;;
       *)       k -n "$ENV_NAME" get deploy,pods,svc,httproute ;;
     esac
     ;;
@@ -66,6 +88,7 @@ case "$CMD" in
       prd) echo "https://claudharmony.io" ;;
       dev) echo "https://dev.claudharmony.io" ;;
       console) echo "https://console.claudharmony.io" ;;
+      identity|realms) echo "https://auth.claudharmony.io  (관리: http://auth.localhost/admin/)" ;;
       *)   echo "url 은 dev | prd 만 지원" >&2; exit 1 ;;
     esac
     ;;

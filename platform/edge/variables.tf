@@ -12,7 +12,7 @@ variable "domain" {
 variable "hostnames" {
   description = "터널로 받을 호스트 이름 → 모두 Gateway 로 보낸다. 환경 구분은 HTTPRoute hostnames 가 한다"
   type        = list(string)
-  default     = ["claudharmony.io", "www.claudharmony.io", "dev.claudharmony.io"]
+  default     = ["claudharmony.io", "www.claudharmony.io", "dev.claudharmony.io", "auth.claudharmony.io"]
 }
 
 variable "gateway_service" {

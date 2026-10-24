@@ -43,6 +43,8 @@ resource "kubernetes_deployment_v1" "this" {
       }
 
       spec {
+        service_account_name = var.service_account
+
         container {
           name              = var.name
           image             = var.image

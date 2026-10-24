@@ -41,3 +41,14 @@ variable "kube_context" {
   type    = string
   default = "kind-claudharmony"
 }
+
+variable "console_allowed_emails" {
+  description = "console 에 로그인 허용할 이메일 (infra.sh 가 ~/.claudharmony/cloudflare.env 의 CONSOLE_ALLOWED_EMAILS 로 주입)"
+  type        = list(string)
+  sensitive   = true
+
+  validation {
+    condition     = length(var.console_allowed_emails) > 0
+    error_message = "CONSOLE_ALLOWED_EMAILS 가 비어 있으면 콘솔이 아무 보호 없이 열릴 수 있어 막는다."
+  }
+}

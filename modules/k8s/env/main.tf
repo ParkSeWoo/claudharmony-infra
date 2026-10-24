@@ -46,16 +46,17 @@ module "service" {
   source   = "../app"
   for_each = local.deployed
 
-  name       = each.key
-  namespace  = kubernetes_namespace_v1.this.metadata[0].name
-  image      = var.images[each.key]
-  port       = each.value.port
-  replicas   = each.value.replicas
-  memory_mb  = each.value.memory_mb
-  env        = merge({ APP_ENV = var.environment }, each.value.database ? local.db_env : {}, each.value.env)
-  secret_env = each.value.database ? local.db_secret_env : {}
-  gateway    = var.gateway
-  route      = each.value.route_path == null ? null : { path = each.value.route_path, hostnames = var.hostnames }
+  name            = each.key
+  namespace       = kubernetes_namespace_v1.this.metadata[0].name
+  image           = var.images[each.key]
+  port            = each.value.port
+  replicas        = each.value.replicas
+  memory_mb       = each.value.memory_mb
+  env             = merge({ APP_ENV = var.environment }, each.value.database ? local.db_env : {}, each.value.env)
+  secret_env      = each.value.database ? local.db_secret_env : {}
+  service_account = each.value.service_account
+  gateway         = var.gateway
+  route           = each.value.route_path == null ? null : { path = each.value.route_path, hostnames = var.hostnames }
 }
 
 module "tunnel" {

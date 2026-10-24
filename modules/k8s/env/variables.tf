@@ -30,12 +30,13 @@ variable "gateway_service" {
 variable "services" {
   description = "서비스 카탈로그 (services.auto.tfvars.json). key = 서비스 이름"
   type = map(object({
-    port       = optional(number, 8080)
-    route_path = optional(string) # null 이면 외부 비공개
-    replicas   = optional(number, 1)
-    memory_mb  = optional(number, 512)
-    env        = optional(map(string), {})
-    database   = optional(bool, false) # true 면 PostgreSQL 접속 정보(SPRING_DATASOURCE_*) 주입
+    port            = optional(number, 8080)
+    route_path      = optional(string) # null 이면 외부 비공개
+    replicas        = optional(number, 1)
+    memory_mb       = optional(number, 512)
+    env             = optional(map(string), {})
+    database        = optional(bool, false) # true 면 PostgreSQL 접속 정보(SPRING_DATASOURCE_*) 주입
+    service_account = optional(string)      # K8s API 를 쓰는 서비스용
   }))
 }
 

@@ -73,3 +73,9 @@ variable "gateway" {
     namespace = string
   })
 }
+
+variable "service_account" {
+  description = "Pod 가 쓸 ServiceAccount (null = default). K8s API 를 호출하는 서비스(console)용"
+  type        = string
+  default     = null
+}

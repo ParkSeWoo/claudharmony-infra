@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 사용법: scripts/infra.sh <stack> <command>
-#   stack  : cluster | gateway | edge | addons | database | dev | prd
+#   stack  : cluster | gateway | edge | addons | database | dev | prd | console
 #            (cluster/gateway/edge/addons/database = platform/*, dev/prd = envs/*)
 #   command: init | plan | apply | destroy | status | logs <svc> | url | check
 #   예) scripts/infra.sh cluster apply     # 1단계: kind 클러스터
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_NAME="${1:?stack 필요: cluster | gateway | edge | addons | database | dev | prd}"
+ENV_NAME="${1:?stack 필요: cluster | gateway | edge | addons | database | dev | prd | console}"
 CMD="${2:-plan}"
 case "$ENV_NAME" in
   cluster|gateway|edge|addons|database) TF_DIR="$ROOT/platform/$ENV_NAME" ;;
@@ -28,6 +28,9 @@ if [ "$ENV_NAME" = edge ]; then
   set -a; . "$CF_ENV"; set +a
   export TF_VAR_cloudflare_account_id="${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID 비어 있음}"
   : "${CLOUDFLARE_API_TOKEN:?CLOUDFLARE_API_TOKEN 비어 있음}"   # cloudflare provider 가 환경변수로 읽음
+  # 콘솔 로그인 허용 이메일 (공개 저장소에 두지 않음) → JSON 배열
+  TF_VAR_console_allowed_emails="$(python3 -c 'import json,os;print(json.dumps([e.strip() for e in os.environ.get("CONSOLE_ALLOWED_EMAILS","").split(",") if e.strip()]))')"
+  export TF_VAR_console_allowed_emails
 fi
 STATE_DIR="${CLAUDHARMONY_STATE_DIR:-$HOME/.claudharmony/state}"
 
@@ -62,11 +65,12 @@ case "$CMD" in
     case "$ENV_NAME" in
       prd) echo "https://claudharmony.io" ;;
       dev) echo "https://dev.claudharmony.io" ;;
+      console) echo "https://console.claudharmony.io" ;;
       *)   echo "url 은 dev | prd 만 지원" >&2; exit 1 ;;
     esac
     ;;
   check)
-    HOST="$([ "$ENV_NAME" = prd ] && echo localhost || echo "$ENV_NAME.localhost")"
+    HOST="$([ "$ENV_NAME" = prd ] && echo localhost || echo "$ENV_NAME.localhost")"   # console → console.localhost
     echo "local  : http://$HOST/ -> $(curl -s -o /dev/null -w '%{http_code}' -H "Host: $HOST" http://127.0.0.1/)"
     URL="$("$0" "$ENV_NAME" url)"
     echo "domain : $URL -> $(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$URL/") $(curl -s --max-time 10 "$URL/version")"

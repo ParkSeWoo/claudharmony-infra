@@ -46,6 +46,7 @@ variable "database" {
     instances    = optional(number, 1)
     storage_size = optional(string, "5Gi")
     memory_mb    = optional(number, 512)
+    local_port   = optional(number) # 로컬 DB 툴 접속용 NodePort (dev 31432, prd 32432)
   })
   default = null
 }

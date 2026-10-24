@@ -52,6 +52,12 @@ variable "database" {
   default = "claudharmony"
 }
 
+variable "local_node_port" {
+  description = "로컬 DB 툴 접속용 NodePort (kind Docker 네트워크 안에서만 닿음 — Mac 은 scripts/db.sh 의 프록시로). null 이면 없음"
+  type        = number
+  default     = null
+}
+
 variable "extensions" {
   description = "앱 DB 에 만들 확장"
   type        = list(string)
@@ -139,6 +145,33 @@ resource "kubectl_manifest" "cluster" {
   timeouts {
     create = "10m"
   }
+}
+
+# 로컬 접속용 — kubectl port-forward 는 클라이언트가 끊을 때 DB 쪽 리셋으로 종료되는 한계가 있어
+# NodePort(+ Mac 의 127.0.0.1 전용 socat 프록시 컨테이너)로 안정적으로 연결한다.
+# 호스트 포트 매핑이 없으므로 인터넷/사무실 LAN 에서는 닿지 않는다.
+resource "kubernetes_service_v1" "local" {
+  count = var.local_node_port == null ? 0 : 1
+
+  metadata {
+    name      = "${var.name}-local"
+    namespace = var.namespace
+    labels    = { "app.kubernetes.io/part-of" = "claudharmony", "claudharmony.io/purpose" = "local-db-access" }
+  }
+
+  spec {
+    type     = "NodePort"
+    selector = { "cnpg.io/cluster" = var.name, "cnpg.io/instanceRole" = "primary" }
+
+    port {
+      name        = "postgres"
+      port        = 5432
+      target_port = 5432
+      node_port   = var.local_node_port
+    }
+  }
+
+  depends_on = [kubectl_manifest.cluster]
 }
 
 output "host" {

@@ -178,7 +178,7 @@ cat envs/dev/services.auto.tfvars.json envs/dev/images.auto.tfvars.json
 ```bash
 kubectl get clusters.postgresql.cnpg.io -A
 kubectl -n dev exec pg-1 -c postgres -- psql -U postgres claudharmony -c '\dt'
-scripts/db.sh dev                         # TablePlus/DBeaver 로 접속 (readonly, 비번 클립보드)
+scripts/db.sh up && scripts/db.sh psql dev   # 로컬 접속 (readonly) — IntelliJ 는 127.0.0.1:15432
 scripts/db-schema.sh dev plan ~/workspace/claudharmony-api/db/schema.sql
 ```
 

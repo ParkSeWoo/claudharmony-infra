@@ -446,6 +446,17 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **문제**: 이미지 일괄 삭제가 조용히 실패 — `docker rmi $RM` 에서 **zsh 는 따옴표 없는 변수를 단어로 쪼개지 않음** → 줄바꿈 포함 한 덩어리로 전달. `while read` 로 하나씩 처리해서 해결
 **남겨 둔 것**: 다른 프로젝트 이미지·볼륨(airflow, qdrant, kind ch4), Atlas 임시 DB 컨테이너(재사용), Terraform state `.backup`
 
+### 37. 로컬에서 PostgreSQL 확인 환경
+
+1. `brew install libpq` → psql 18.6 (`~/.zshrc` PATH 추가). 이 Mac 의 DB 도구는 IntelliJ 뿐
+2. `scripts/db.sh` 개편: `up/down/status/info/psql/pgpass` — 비밀번호는 기본 가림, `~/.pgpass` 는 **prd 쓰기 계정 제외**
+3. **문제**: 백그라운드 `kubectl port-forward` + 재연결 루프 → 첫 접속 뒤 계속 `Connection refused`
+   - 처음엔 상태 확인용 `nc -z` 탓으로 보고 `lsof` 로 바꿨으나 동일
+   - 포그라운드 실행으로 원인 확인: `error forwarding port 5432 ... read: connection reset by peer` → `error: lost connection to pod` — **클라이언트가 끊을 때 DB 쪽 리셋에 port-forward 프로세스가 종료** (kubectl 의 알려진 한계)
+   - **해결**: port-forward 를 버리고 `modules/k8s/postgres` 에 NodePort `pg-local`(dev 31432 / prd 32432) + Mac 의 **socat 프록시 컨테이너**(127.0.0.1 전용, unless-stopped) → 12회 연속 접속 성공, 재시작 0
+4. 적용 중 주의: 로컬 infra 가 원격보다 뒤처진 상태의 plan 이 **api·web 을 옛 이미지로 되돌리려 함** → 적용 전 발견, `git pull` 후 재plan = Service 1개 추가만. **apply 전에 항상 최신 pull**
+5. readonly 로 INSERT → `permission denied` 확인, IntelliJ 연결 방법·prd 읽기전용 설정 문서화
+
 ---
 
 ## 템플릿 (다음 작업용)

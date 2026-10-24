@@ -31,6 +31,8 @@ module "postgres" {
   instances    = var.database.instances
   storage_size = var.database.storage_size
   memory_mb    = var.database.memory_mb
+
+  local_node_port = var.database.local_port
 }
 
 locals {

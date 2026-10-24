@@ -95,19 +95,53 @@ scripts/db-schema.sh prd plan  …                                            # 
 - 제외 객체: `spatial_ref_sys`(PostGIS), `flyway_schema_history`(과거 이력 — dev 는 2026-10-24 삭제, prd 는 Flyway 없는 버전 배포 후 삭제)
 - 테스트 DB(Testcontainers)도 `db/schema.sql` 로 생성 → **스키마 기준 파일 하나**
 
-## 로컬 DB 툴로 접속 — `scripts/db.sh`
+## 로컬에서 DB 확인하기 — `scripts/db.sh`
 
 ```bash
-scripts/db.sh dev            # readonly (기본) — 실수로 데이터 못 바꿈
-scripts/db.sh prd readonly
-scripts/db.sh dev app        # 쓰기 필요할 때만
+scripts/db.sh up            # 한 번만 — dev·prd 상시 연결 (재부팅 후에도 자동)
+scripts/db.sh status        # 연결 상태
+scripts/db.sh info          # 접속 정보 표 (비밀번호 가림 / --show 표시 / info dev app --copy 클립보드)
+scripts/db.sh pgpass        # ~/.pgpass 생성 → psql·pg_dump 비밀번호 생략 (prd 쓰기 계정 제외)
+scripts/db.sh psql dev      # 바로 SQL (기본 readonly) · psql dev app 은 쓰기 계정
+scripts/db.sh down          # 연결 끊기
 ```
 
-- port-forward 를 열고 접속 정보를 보여준다 (dev `127.0.0.1:15432`, prd `127.0.0.1:25432`)
-- **비밀번호는 화면에 출력하지 않고 클립보드로 복사** → TablePlus / DBeaver / DataGrip 에 붙여넣기
-- 종료: Ctrl+C
+| 환경 | 호스트 | 포트 | DB | 계정 |
+|------|--------|------|----|------|
+| dev | `127.0.0.1` | **15432** | `claudharmony` | `readonly`(기본) / `app` |
+| prd | `127.0.0.1` | **25432** | `claudharmony` | `readonly`(기본) / `app`(명시할 때만) |
 
-슈퍼유저로 바로 SQL: `kubectl -n dev exec -it pg-1 -c postgres -- psql -U postgres claudharmony`
+SSL 은 끔 (Mac 안에서만 연결). 비밀번호는 `scripts/db.sh info --show` 또는 `--copy`.
+
+### 동작 방식
+
+```mermaid
+flowchart LR
+    T[DB 툴 · psql<br/>127.0.0.1:15432/25432] --> P[socat 프록시 컨테이너<br/>claudharmony-pg-dev/prd<br/>127.0.0.1 에만 열림]
+    P -->|kind Docker 네트워크| N[NodePort 31432 / 32432<br/>Service pg-local]
+    N --> PG[(pg-1 primary)]
+```
+
+- 처음엔 `kubectl port-forward` 였는데, **클라이언트가 접속을 끊을 때 DB 쪽 리셋으로 port-forward 프로세스 자체가 종료**(`lost connection to pod`)되는 한계 → DB 툴(연결을 자주 여닫음)에서 불안정
+- 그래서 `modules/k8s/postgres` 에 **NodePort Service `pg-local`**(dev 31432, prd 32432) + Mac 의 **socat 프록시 컨테이너**(`alpine/socat:1.8.1.1`, `--restart unless-stopped`, 127.0.0.1 바인딩)
+- NodePort 는 호스트 포트 매핑이 없어 **인터넷·사무실 LAN 에서는 닿지 않음** (같은 Mac 의 kind Docker 네트워크 안에서만)
+
+### IntelliJ 에서 보기 (Database 도구)
+
+1. `scripts/db.sh up` (한 번만)
+2. 오른쪽 **Database** 탭 → **+ → Data Source → PostgreSQL** (드라이버 다운로드 승인)
+3. 이름 `claudharmony dev`, Host `127.0.0.1`, Port `15432`, Database `claudharmony`, User `readonly`, Password = `scripts/db.sh info dev readonly --copy` 후 붙여넣기 → **Test Connection** → OK
+4. prd 도 같은 방법으로 Port `25432` — **prd 는 readonly 만** 등록 권장. 데이터 소스 설정의 *Options → Read-only* 도 체크
+5. 색 구분: 데이터 소스 우클릭 → *Color Settings* → prd 를 빨간색
+
+### psql 자주 쓰는 것
+
+```sql
+\dt                      -- 테이블 목록
+\d trend_keyword         -- 테이블 구조
+select * from trend_snapshot order by collected_hour desc limit 5;
+select postgis_version();
+```
 
 ## 운영
 

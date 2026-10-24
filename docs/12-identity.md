@@ -183,6 +183,20 @@ kubectl -n identity logs deploy/keycloak --tail 100
 | 백업 | Keycloak의 상태는 전부 DB `identity/pg`에 있음 → 앱 DB와 같은 백업 계획(Barman → R2, 예정)에 포함 |
 | 늘리기 | `replicas` 2 이상 + `KC_CACHE=ispn` + `KC_CACHE_STACK=kubernetes`(headless Service 필요) |
 
+## 5-1. 커스텀 이미지 (로그인 테마) 배포
+
+테마·확장은 앱 세션의 저장소 [claudharmony-keycloak](https://github.com/ParkSeWoo/claudharmony-keycloak)(private)에 있습니다. 공식 26.7.5 이미지에 테마 `claudharmony`를 넣고, 같은 빌드 옵션(`KC_DB=postgres`, health, metrics)으로 `kc.sh build`한 이미지입니다.
+
+```bash
+# claudharmony-keycloak 저장소 main 배포 워크플로(self-hosted runner)가 실행
+scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
+#   → kind load → platform/identity/images.auto.tfvars.json 기록 → identity apply → rollout 확인 → 기록 커밋
+```
+
+- `platform/identity`는 `images.keycloak`이 있으면 그 이미지를 쓰고, 없으면 공식 이미지(`keycloak_image`)를 씁니다.
+- Keycloak은 **한 대를 dev·prd realm이 같이 씁니다.** 이미지 배포는 main(또는 release)에서만 합니다. 배포 전략이 `Recreate`라서 1~2분 동안 로그인이 안 됩니다.
+- 테마 켜기는 realm별로 합니다(`platform/realms` 변수 `realms.<env>.login_theme`). **이미지가 먼저 배포된 다음에** dev realm부터 `"claudharmony"`로 켜고, 확인한 뒤 prd를 켭니다. 이미지에 없는 테마를 지정하면 로그인 화면이 오류를 냅니다.
+
 ## 6. 앱 연동 계약
 
 인프라(`platform/realms`)가 각 Namespace에 Secret을 넣어 줍니다. 앱은 이 키만 환경변수로 받으면 됩니다. client secret이 바뀌어도 앱 코드는 그대로입니다.

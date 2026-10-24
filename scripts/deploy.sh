@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # 서비스 이미지를 환경에 배포하고, 배포 기록(images.auto.tfvars.json)을 infra 저장소에 커밋한다.
-# 사용법: scripts/deploy.sh <dev|prd> <service> <image>
-#   예) scripts/deploy.sh dev hello-app claudharmony/hello-app:dev-1a2b3c4
+# 사용법: scripts/deploy.sh <dev|prd|console|identity> <service> <image>
+#   예) scripts/deploy.sh dev api claudharmony/api:dev-1a2b3c4
+#       scripts/deploy.sh identity keycloak claudharmony/keycloak:20261024-1a2b3c4   (platform/identity, 하나뿐인 Keycloak — dev·prd realm 공용)
 # 앱 저장소의 배포 워크플로(self-hosted runner)가 호출한다.
 # 이미지는 같은 호스트에 빌드돼 있어야 하고, 여기서 kind 클러스터 노드로 load 한다 (레지스트리 대신).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_NAME="${1:?환경 필요: dev | prd}"
+ENV_NAME="${1:?환경 필요: dev | prd | console | identity}"
 SERVICE="${2:?서비스 이름 필요}"
 IMAGE="${3:?이미지 필요}"
-IMAGES_FILE="$ROOT/envs/$ENV_NAME/images.auto.tfvars.json"
+case "$ENV_NAME" in
+  identity) IMAGES_FILE="$ROOT/platform/identity/images.auto.tfvars.json" ;;   # Namespace = identity
+  *)        IMAGES_FILE="$ROOT/envs/$ENV_NAME/images.auto.tfvars.json" ;;      # Namespace = 환경 이름
+esac
 
 docker image inspect "$IMAGE" >/dev/null || { echo "이미지 없음: $IMAGE"; exit 1; }
 

@@ -9,8 +9,15 @@ variable "kube_context" {
 }
 
 variable "keycloak_image" {
-  type    = string
-  default = "quay.io/keycloak/keycloak:26.7.5"
+  description = "기본 이미지 (공식). images.auto.tfvars.json 에 keycloak 이 있으면 그쪽이 우선"
+  type        = string
+  default     = "quay.io/keycloak/keycloak:26.7.5"
+}
+
+variable "images" {
+  description = "배포 기록 — scripts/deploy.sh identity keycloak <image> 가 갱신 (claudharmony-keycloak 저장소: 공식 이미지 + 로그인 테마)"
+  type        = map(string)
+  default     = {}
 }
 
 variable "public_hostname" {

@@ -517,6 +517,16 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **배운 점**: kind는 노드가 전부 한 Docker VM 안에 있음 → VM 메모리가 클러스터 전체의 한도. 새 구성요소를 올리기 전에 `docker stats`로 **VM 전체**(다른 프로젝트 포함) 여유를 볼 것. swap이 가득 차면 OOM으로 죽지 않고 전체가 느려지면서 연쇄 재시작한다.
 
 ---
+### 42. Keycloak 커스텀 이미지 배포 경로 + 테마 변수 (앱 세션 요청)
+
+- 앱 세션(ai-root-78) 요청: claudharmony-keycloak 이미지(테마 `claudharmony`)로 교체할 수 있는 경로, `login_theme`, kind load
+- `scripts/deploy.sh`: `identity` 스택 지원 → `platform/identity/images.auto.tfvars.json` 기록, Namespace `identity`
+- `platform/identity`: `var.images` (`images.keycloak`이 있으면 우선, 없으면 공식 이미지)
+- `platform/realms`: realm별 `login_theme` (optional, 기본 null) — 이미지 배포 후 dev → prd 순서로 켬
+- 확인: identity plan = 손으로 줄인 replicas 0→1 외에 변경 없음. realms plan은 Keycloak이 꺼져 있어 접속 오류(예상)
+- 앱 세션 보고: 로컬 Keycloak(테마 미리보기)을 중지했고, 장애 뒤 xDS를 못 받아 1/2로 남은 Envoy 프록시 Pod를 delete해 복구함 (#41 보충)
+
+---
 
 ## 템플릿 (다음 작업용)
 

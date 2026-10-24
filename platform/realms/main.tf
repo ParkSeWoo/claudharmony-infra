@@ -18,6 +18,7 @@ resource "keycloak_realm" "this" {
   realm        = each.value.realm
   display_name = each.value.display_name
   enabled      = true
+  login_theme  = each.value.login_theme
 
   login_with_email_allowed = true
   duplicate_emails_allowed = false

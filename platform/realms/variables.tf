@@ -34,9 +34,10 @@ variable "realms" {
   type = map(object({
     realm        = string
     display_name = string
-    web_urls     = list(string) # 로그인 후 돌아올 web 주소 (redirect URI / CORS origin)
-    console_urls = list(string) # 비어 있으면 console client 를 만들지 않음
-    test_user    = bool         # 로그인 확인용 사용자 (dev 만)
+    web_urls     = list(string)     # 로그인 후 돌아올 web 주소 (redirect URI / CORS origin)
+    console_urls = list(string)     # 비어 있으면 console client 를 만들지 않음
+    test_user    = bool             # 로그인 확인용 사용자 (dev 만)
+    login_theme  = optional(string) # null = Keycloak 기본. "claudharmony" 는 커스텀 이미지 배포 후에만 (없는 테마를 지정하면 로그인 화면 오류)
   }))
   default = {
     prd = {

@@ -9,6 +9,8 @@
 #   이 스택은 서버만 띄운다. realm·client·사용자 설정은 platform/realms (Keycloak provider) 가 한다.
 
 locals {
+  # 커스텀 이미지(테마 포함)가 배포돼 있으면 그것, 없으면 공식 이미지
+  image     = lookup(var.images, "keycloak", var.keycloak_image)
   namespace = "identity"
   labels    = { "app.kubernetes.io/name" = "keycloak", "app.kubernetes.io/part-of" = "claudharmony", "app.kubernetes.io/managed-by" = "terraform" }
 }
@@ -77,8 +79,9 @@ resource "kubernetes_deployment_v1" "keycloak" {
       spec {
         container {
           name  = "keycloak"
-          image = var.keycloak_image
-          args  = ["start"]
+          image = local.image
+          # 커스텀 이미지는 같은 빌드 옵션(KC_DB 등)으로 kc.sh build 돼 있어 재빌드 없이 바로 뜬다
+          args = ["start"]
 
           env {
             name  = "KC_DB"

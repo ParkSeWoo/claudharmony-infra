@@ -17,5 +17,7 @@
 | 11 | [학습 가이드](11-learning-guide.md) | 컨테이너 → 클러스터 → 워크로드 → Gateway → 외부 공개 → Terraform → DB → 인증 → CI/CD → 운영 → 장애 사례, 단계별 확인 명령·실습 |
 | 12 | [인증 서버](12-identity.md) | Keycloak — 개념(OIDC·realm·client), 공개 범위, Terraform 두 스택, 스크린샷, 앱 연동 Secret 계약, 소셜 로그인 |
 
+한 장 요약: [`system-map.html`](system-map.html) — 주소·요청 경로·Namespace·스택·배포·로그인·데이터·보안 경계
+
 브라우저로 보기: [`index.html`](index.html) — `python3 scripts/build_docs.py` 로 생성
 Obsidian 동기화: `python3 scripts/sync_obsidian.py`

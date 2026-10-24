@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>클라우드 하모니 시스템 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: 한 장짜리 운영 지도 — 위에서 아래로 "밖에서 안으로"(주소 → 경로 → Namespace → 스택 → 배포 → 인증 → 데이터 → 운영) */
+:root{
+  --ink:#16202b;          /* 본문 */
+  --ink-soft:#4d5b69;     /* 보조 글자 */
+  --paper:#f5f7f8;        /* 바탕 */
+  --panel:#ffffff;        /* 카드 */
+  --line:#d7dee4;         /* 구분선 */
+  --accent:#0f7c8c;       /* 강조 (청록 — 터널·트래픽) */
+  --accent-soft:#e1f1f3;
+  --ok:#1f7a45; --ok-bg:#e3f3ea;
+  --warn:#8a5a00; --warn-bg:#fbefd6;
+  --off:#6b7480; --off-bg:#eceff2;
+  --font-body:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ink:#e3e9ee; --ink-soft:#9aa8b5; --paper:#11171d; --panel:#18212a; --line:#2a3742;
+    --accent:#4cc2cf; --accent-soft:#163238;
+    --ok:#6fd49a; --ok-bg:#16301f; --warn:#f0c46a; --warn-bg:#33280f; --off:#9aa3ad; --off-bg:#222b33;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ink:#e3e9ee; --ink-soft:#9aa8b5; --paper:#11171d; --panel:#18212a; --line:#2a3742;
+  --accent:#4cc2cf; --accent-soft:#163238;
+  --ok:#6fd49a; --ok-bg:#16301f; --warn:#f0c46a; --warn-bg:#33280f; --off:#9aa3ad; --off-bg:#222b33;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.65;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1080px;margin:0 auto;padding-block:40px 64px;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.3}
+h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:20px;font-weight:700;display:flex;align-items:baseline;gap:10px}
+h2 .tag{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.04em}
+h3{font-size:15px;font-weight:600}
+p{margin:0;max-width:68ch}
+.muted{color:var(--ink-soft)}
+code,.mono{font-family:var(--font-mono);font-size:.88em}
+code{background:var(--accent-soft);padding:1px 5px;border-radius:4px;word-break:break-all}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+
+header.top{display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line);padding-bottom:24px}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.summary{font-size:16px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--ink-soft)}
+.facts b{color:var(--ink);font-weight:600}
+
+/* 상태 표 */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-size:12px;font-weight:600;color:var(--ink-soft);letter-spacing:.03em;background:var(--paper)}
+td.num,.num{font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:12px;padding:1px 8px;border-radius:99px;white-space:nowrap}
+.pill.ok{color:var(--ok);background:var(--ok-bg)}
+.pill.warn{color:var(--warn);background:var(--warn-bg)}
+.pill.off{color:var(--off);background:var(--off-bg)}
+
+/* 요청 경로 */
+.flow{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:18px;overflow-x:auto}
+.flow svg{display:block;min-width:760px;width:100%;height:auto}
+.flow .box{fill:var(--panel);stroke:var(--line);stroke-width:1.2}
+.flow .box.hot{fill:var(--accent-soft);stroke:var(--accent)}
+.flow .t{fill:var(--ink);font:600 13px var(--font-body)}
+.flow .s{fill:var(--ink-soft);font:400 11px var(--font-mono)}
+.flow .edge{stroke:var(--accent);stroke-width:1.6;fill:none}
+.flow .edge.soft{stroke:var(--ink-soft);stroke-dasharray:4 4}
+.flow .head{fill:var(--accent)}
+.flow .head.soft{fill:var(--ink-soft)}
+
+/* Namespace 지도 */
+.ns-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.ns{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.ns .name{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--accent)}
+.ns ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.ns li{display:flex;justify-content:space-between;gap:10px}
+.ns li span:last-child{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);text-align:right;word-break:break-all}
+.ns .src{font-size:12px;color:var(--ink-soft);border-top:1px dashed var(--line);padding-top:6px}
+
+/* 두 칸 */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.card ul,.card ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+dl.kv{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:14px}
+dl.kv dt{color:var(--ink-soft)}
+dl.kv dd{margin:0;min-width:0}
+
+/* 배포 흐름 */
+.lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.lane{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.lane .when{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
+.lane ol{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+
+pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--font-mono);font-size:13px;line-height:1.7}
+pre .c{color:var(--ink-soft)}
+
+.todo li{list-style:none;margin-left:-18px;display:flex;gap:8px;align-items:baseline}
+footer{font-size:12.5px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:560px){h1{font-size:24px}.wrap{gap:36px;padding-block:28px 48px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <span class="eyebrow">claudharmony · office k8s · 2026-10-25 기준</span>
+  <h1>클라우드 하모니 시스템 지도</h1>
+  <p class="summary">사무실 Mac 한 대 위의 Kubernetes 클러스터에서 홈페이지·API·로그인 서버·관리자 콘솔이 돌아갑니다. 인터넷 요청은 포트포워딩 없이 Cloudflare 터널로 들어오고, 모든 구성은 Terraform 코드와 GitHub로 관리합니다.</p>
+  <div class="facts">
+    <span>클러스터 <b>kind · Kubernetes v1.37.0</b> (노드 2)</span>
+    <span>Docker 메모리 <b class="num">19.5 GB</b></span>
+    <span>현재 사용 <b class="num">약 5.0 GB</b></span>
+    <span>저장소 <b>infra · api · web · keycloak · console</b></span>
+  </div>
+</header>
+
+<section aria-labelledby="s-urls">
+  <h2 id="s-urls"><span class="tag">ENDPOINTS</span>주소와 상태</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>주소</th><th>무엇</th><th>공개 범위</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://claudharmony.io">claudharmony.io</a> · www</td><td>홈페이지 (prd)</td><td>인터넷</td><td><span class="pill ok">200</span></td></tr>
+        <tr><td><a href="https://dev.claudharmony.io">dev.claudharmony.io</a></td><td>홈페이지 (dev)</td><td>인터넷</td><td><span class="pill ok">200</span></td></tr>
+        <tr><td><a href="https://auth.claudharmony.io/realms/claudharmony/account">auth.claudharmony.io</a></td><td>로그인 (Keycloak)</td><td>인터넷 · 로그인 경로만</td><td><span class="pill ok">200</span></td></tr>
+        <tr><td><a href="https://console.claudharmony.io">console.claudharmony.io</a></td><td>관리자 콘솔</td><td>인터넷 · admin 역할만</td><td><span class="pill ok">302 → 로그인</span></td></tr>
+        <tr><td><code>localhost</code> · <code>dev.localhost</code></td><td>홈페이지 prd · dev</td><td>사무실 Mac</td><td><span class="pill ok">200</span></td></tr>
+        <tr><td><code>auth.localhost/admin</code></td><td>Keycloak 관리 콘솔</td><td>사무실 Mac 전용</td><td><span class="pill ok">열림</span></td></tr>
+        <tr><td><code>console.localhost</code></td><td>관리자 콘솔</td><td>사무실 Mac</td><td><span class="pill ok">302 → 로그인</span></td></tr>
+        <tr><td><code>127.0.0.1:15432</code> · <code>:25432</code></td><td>PostgreSQL dev · prd (DataGrip)</td><td>사무실 Mac 전용</td><td><span class="pill ok">연결</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-flow">
+  <h2 id="s-flow"><span class="tag">REQUEST PATH</span>요청이 들어오는 길</h2>
+  <p class="muted">사무실은 이중 NAT라 들어오는 포트를 열 수 없습니다. 클러스터 안의 cloudflared가 Cloudflare로 먼저 연결을 열어 두고, 요청은 그 터널을 거꾸로 타고 들어옵니다. TLS(https)는 Cloudflare에서 끝납니다.</p>
+  <div class="flow">
+    <svg viewBox="0 0 980 300" role="img" aria-label="인터넷에서 Cloudflare, cloudflared, Envoy Gateway를 거쳐 각 서비스로 가는 경로">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+        <marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head soft"/></marker>
+      </defs>
+      <rect class="box" x="10" y="120" width="130" height="58" rx="8"/>
+      <text class="t" x="24" y="145">사용자 브라우저</text><text class="s" x="24" y="164">https</text>
+      <rect class="box hot" x="175" y="120" width="140" height="58" rx="8"/>
+      <text class="t" x="189" y="145">Cloudflare</text><text class="s" x="189" y="164">DNS · TLS · 캐시</text>
+      <rect class="box hot" x="350" y="120" width="140" height="58" rx="8"/>
+      <text class="t" x="364" y="145">cloudflared ×2</text><text class="s" x="364" y="164">ns edge · 터널</text>
+      <rect class="box hot" x="525" y="120" width="150" height="58" rx="8"/>
+      <text class="t" x="539" y="145">Envoy Gateway</text><text class="s" x="539" y="164">HTTPRoute 호스트별</text>
+      <path class="edge" d="M140 149 H172" marker-end="url(#ah)"/>
+      <path class="edge" d="M315 149 H347" marker-end="url(#ah)"/>
+      <path class="edge" d="M490 149 H522" marker-end="url(#ah)"/>
+
+      <rect class="box" x="735" y="14" width="230" height="50" rx="8"/>
+      <text class="t" x="749" y="36">web → api → PostgreSQL</text><text class="s" x="749" y="54">ns prd (claudharmony.io)</text>
+      <rect class="box" x="735" y="82" width="230" height="50" rx="8"/>
+      <text class="t" x="749" y="104">web → api → PostgreSQL</text><text class="s" x="749" y="122">ns dev (dev.claudharmony.io)</text>
+      <rect class="box" x="735" y="150" width="230" height="50" rx="8"/>
+      <text class="t" x="749" y="172">Keycloak → PostgreSQL</text><text class="s" x="749" y="190">ns identity (auth.)</text>
+      <rect class="box" x="735" y="218" width="230" height="50" rx="8"/>
+      <text class="t" x="749" y="240">console</text><text class="s" x="749" y="258">ns console (console.)</text>
+      <path class="edge" d="M675 149 C705 149 705 39 732 39" marker-end="url(#ah)"/>
+      <path class="edge" d="M675 149 C705 149 705 107 732 107" marker-end="url(#ah)"/>
+      <path class="edge" d="M675 149 C705 149 705 175 732 175" marker-end="url(#ah)"/>
+      <path class="edge" d="M675 149 C705 149 705 243 732 243" marker-end="url(#ah)"/>
+
+      <rect class="box" x="350" y="232" width="325" height="50" rx="8"/>
+      <text class="t" x="364" y="254">사무실 Mac 브라우저</text><text class="s" x="364" y="272">*.localhost → :80 → NodePort 30080</text>
+      <path class="edge soft" d="M600 232 V181" marker-end="url(#ahs)"/>
+    </svg>
+  </div>
+  <p class="muted">공개 도메인 route는 <code>X-Forwarded-Proto: https</code>를 붙여 보냅니다. Envoy가 이 값을 http로 덮어쓰면 Keycloak과 콘솔이 주소를 http로 만들어 로그인이 깨지기 때문입니다.</p>
+</section>
+
+<section aria-labelledby="s-ns">
+  <h2 id="s-ns"><span class="tag">NAMESPACES</span>클러스터 안 구성</h2>
+  <div class="ns-grid">
+    <div class="ns"><span class="name">prd</span>
+      <ul><li><span>web</span><span>20261025-197c9bc</span></li><li><span>api</span><span>20261025-e0d27f1</span></li><li><span>PostgreSQL pg</span><span>18.6 · 5Gi</span></li></ul>
+      <span class="src">envs/prd · release/YYYYMMDD 수동 배포</span></div>
+    <div class="ns"><span class="name">dev</span>
+      <ul><li><span>web</span><span>dev-197c9bc</span></li><li><span>api</span><span>dev-e0d27f1</span></li><li><span>PostgreSQL pg</span><span>18.6 · 5Gi</span></li></ul>
+      <span class="src">envs/dev · develop push 자동 배포</span></div>
+    <div class="ns"><span class="name">identity</span>
+      <ul><li><span>Keycloak</span><span>20261024-b007757</span></li><li><span>PostgreSQL pg</span><span>keycloak · 2Gi</span></li></ul>
+      <span class="src">platform/identity + platform/realms</span></div>
+    <div class="ns"><span class="name">console</span>
+      <ul><li><span>console</span><span>console-d67c748</span></li><li><span>권한</span><span>읽기 전용 · Secret 제외</span></li></ul>
+      <span class="src">envs/console · main 배포</span></div>
+    <div class="ns"><span class="name">edge</span>
+      <ul><li><span>cloudflared</span><span>2025.10.0 ×2</span></li></ul>
+      <span class="src">platform/edge (Cloudflare 터널·DNS)</span></div>
+    <div class="ns"><span class="name">envoy-gateway-system</span>
+      <ul><li><span>Envoy Gateway</span><span>v1.9.2</span></li><li><span>Envoy 프록시</span><span>NodePort 30080</span></li></ul>
+      <span class="src">platform/gateway</span></div>
+    <div class="ns"><span class="name">cnpg-system</span>
+      <ul><li><span>CloudNativePG</span><span>1.30.1</span></li></ul>
+      <span class="src">platform/database (DB Operator)</span></div>
+    <div class="ns"><span class="name">kube-system</span>
+      <ul><li><span>metrics-server</span><span>chart 3.14.0</span></li></ul>
+      <span class="src">platform/addons</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="s-tf">
+  <h2 id="s-tf"><span class="tag">TERRAFORM</span>코드로 관리하는 스택</h2>
+  <p class="muted">스택은 위에서 아래 순서로 쌓입니다. 앞 스택이 만든 것 위에서 뒤 스택이 동작하기 때문에 따로 나눴습니다. 상태 파일은 저장소 밖 <code>~/.claudharmony/state/</code>에 있고, 실행은 <code>scripts/infra.sh &lt;스택&gt; &lt;plan|apply&gt;</code>로 합니다.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>스택</th><th>만드는 것</th><th>적용</th></tr></thead>
+      <tbody>
+        <tr><td><code>platform/cluster</code></td><td>kind 클러스터 (control-plane + worker)</td><td><span class="pill off">수동 · 재생성 주의</span></td></tr>
+        <tr><td><code>platform/gateway</code></td><td>Envoy Gateway, Gateway, GatewayClass</td><td><span class="pill ok">main 머지 시 자동</span></td></tr>
+        <tr><td><code>platform/edge</code></td><td>Cloudflare 터널·DNS 5개, cloudflared</td><td><span class="pill warn">사람이 직접</span></td></tr>
+        <tr><td><code>platform/addons</code></td><td>metrics-server</td><td><span class="pill off">수동</span></td></tr>
+        <tr><td><code>platform/database</code></td><td>CloudNativePG Operator</td><td><span class="pill off">수동</span></td></tr>
+        <tr><td><code>platform/identity</code></td><td>Keycloak, 전용 DB, 공개/관리 route</td><td><span class="pill off">수동 · 이미지는 deploy.sh</span></td></tr>
+        <tr><td><code>platform/realms</code></td><td>realm·역할·client·계정, 앱용 Secret, 소셜 로그인</td><td><span class="pill off">수동</span></td></tr>
+        <tr><td><code>envs/dev</code> · <code>envs/prd</code></td><td>Namespace, web·api, PostgreSQL, route</td><td><span class="pill ok">앱 배포 시</span> <span class="pill warn">prd는 사람이</span></td></tr>
+        <tr><td><code>envs/console</code></td><td>관리자 콘솔, 읽기 전용 권한</td><td><span class="pill ok">콘솔 배포 시</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">손으로 apply할 때도 배포와 같은 잠금을 잡고, 배포 기록이 원격보다 뒤처져 있으면 거부합니다. 다른 곳에서 막 배포한 이미지를 되돌리지 않기 위해서입니다.</p>
+</section>
+
+<section aria-labelledby="s-cicd">
+  <h2 id="s-cicd"><span class="tag">CI/CD</span>배포 흐름</h2>
+  <div class="lanes">
+    <div class="lane"><span class="when">develop push → dev</span>
+      <ol><li>사무실 Mac 러너가 이미지 빌드</li><li>DB 스키마 자동 적용 (Atlas)</li><li><code>deploy.sh dev</code>: kind load → apply</li><li>배포 기록을 infra에 커밋</li></ol></div>
+    <div class="lane"><span class="when">release/YYYYMMDD → prd</span>
+      <ol><li>DB schema prd (계획·확인 문구·백업)</li><li>Deploy prd (스키마 확인 후)</li><li>문제없으면 main 머지</li></ol></div>
+    <div class="lane"><span class="when">main → console · keycloak</span>
+      <ol><li>콘솔: <code>deploy.sh console</code></li><li>Keycloak 테마: <code>deploy.sh identity keycloak</code></li><li>Recreate 전략 · 1~2분 로그인 불가</li></ol></div>
+  </div>
+  <p class="muted">러너는 사무실 Mac에 저장소별로 등록되어 있습니다(infra, api, web, keycloak). 레지스트리 없이 같은 Mac에서 빌드한 이미지를 클러스터 노드로 바로 넣습니다.</p>
+</section>
+
+<section aria-labelledby="s-auth">
+  <h2 id="s-auth"><span class="tag">IDENTITY</span>로그인 — Keycloak 26.7.5</h2>
+  <div class="cols">
+    <div class="card"><h3>구조</h3>
+      <dl class="kv">
+        <dt>realm</dt><dd><code>claudharmony</code> (prd) · <code>claudharmony-dev</code> (dev)</dd>
+        <dt>client</dt><dd><code>web</code> 로그인 · <code>api</code> 토큰 검증 · <code>console</code> 관리자</dd>
+        <dt>역할</dt><dd><code>user</code> 가입 시 기본 · <code>admin</code> 콘솔 접속</dd>
+        <dt>테마</dt><dd>claudharmony (카드형, 한국어)</dd>
+        <dt>소셜</dt><dd>Google · GitHub · 카카오 · 네이버 — 코드 준비, 키 등록 대기</dd>
+      </dl></div>
+    <div class="card"><h3>로그인에서 콘솔까지</h3>
+      <ol><li>홈페이지에서 로그인 → Keycloak 화면</li><li>토큰을 받은 web이 api를 호출 (aud=api)</li><li>admin이면 헤더에 '관리자' 링크</li><li>콘솔은 같은 Keycloak 세션으로 바로 열림</li></ol>
+      <p class="muted" style="font-size:13px">인터넷에는 로그인 경로만 엽니다. 관리 화면과 master realm은 사무실 Mac에서만 열립니다.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="s-data">
+  <h2 id="s-data"><span class="tag">DATA</span>데이터</h2>
+  <div class="cols">
+    <div class="card"><h3>PostgreSQL 18.6 + PostGIS 3.6.4</h3>
+      <ul><li>환경마다 따로: prd · dev · identity (CloudNativePG)</li><li>계정: <code>app</code> 쓰기 · <code>readonly</code> 조회</li><li>원칙: 규칙은 앱에, DB는 저장·조회만</li></ul></div>
+    <div class="card"><h3>스키마 — Atlas (선언형)</h3>
+      <ul><li>api 저장소 <code>db/schema.sql</code> 하나가 기준</li><li>dev 자동 적용, prd는 위험 변경 차단 + 백업 후 적용</li><li>앱은 스키마를 바꾸지 않음</li></ul></div>
+  </div>
+</section>
+
+<section aria-labelledby="s-ops">
+  <h2 id="s-ops"><span class="tag">RUNBOOK</span>자주 쓰는 명령</h2>
+<pre><span class="c"># 상태 · 주소 확인</span>
+scripts/infra.sh prd status        scripts/infra.sh prd check
+k9s                                 <span class="c"># 클러스터 전체 보기 (kind-claudharmony)</span>
+
+<span class="c"># 인프라 변경</span>
+git pull --rebase && scripts/infra.sh dev plan && scripts/infra.sh dev apply
+
+<span class="c"># DB</span>
+scripts/db.sh up                    scripts/db.sh psql dev
+scripts/db-schema.sh dev plan ~/workspace/claudharmony-api/db/schema.sql
+
+<span class="c"># 문서 → Obsidian</span>
+python3 scripts/sync_obsidian.py</pre>
+</section>
+
+<section aria-labelledby="s-sec">
+  <h2 id="s-sec"><span class="tag">BOUNDARIES</span>보안 경계</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>경계</th><th>장치</th></tr></thead>
+      <tbody>
+        <tr><td>인터넷 → 사무실</td><td>들어오는 포트 없음. Cloudflare 터널만</td></tr>
+        <tr><td>로그인 서버</td><td>공개 realm 경로만 공개, 관리 화면은 사무실 Mac 전용</td></tr>
+        <tr><td>관리자 콘솔</td><td>Keycloak admin 역할만. 설정이 없으면 전부 거부</td></tr>
+        <tr><td>콘솔 → Kubernetes</td><td>읽기 전용 권한, Secret 접근 불가</td></tr>
+        <tr><td>앱 → DB</td><td>클러스터 안에서만. 비밀번호는 Secret</td></tr>
+        <tr><td>운영 데이터 변경</td><td>사람이 직접 실행 (자동화 도구는 운영 DB·DNS·prd apply를 하지 않음)</td></tr>
+        <tr><td>공개 저장소</td><td>IP·토큰·계정 정보 없음. 자격 증명은 <code>~/.claudharmony/</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-next">
+  <h2 id="s-next"><span class="tag">NEXT</span>남은 일</h2>
+  <div class="cols">
+    <div class="card"><h3>바로 할 수 있는 것</h3>
+      <ul class="todo">
+        <li><span class="pill warn">사용자</span>콘솔 저장소 러너 등록 (<code>setup-runner.sh claudharmony-console</code>)</li>
+        <li><span class="pill warn">사용자</span>소셜 로그인 키 발급 → <code>identity.env</code></li>
+        <li><span class="pill off">인프라</span>Keycloak bootstrap client를 영구 계정으로 교체</li>
+        <li><span class="pill off">인프라</span>비밀번호 재설정 메일(SMTP)</li>
+      </ul></div>
+    <div class="card"><h3>다음 단계</h3>
+      <ul class="todo">
+        <li><span class="pill off">데이터</span>DB 정기 백업 (Barman → Cloudflare R2)</li>
+        <li><span class="pill off">콘솔</span>2단계: 시작 · 중지 · 재시작 · 배포 버튼</li>
+        <li><span class="pill off">데이터</span>Redis · MinIO → Qdrant → ClickHouse</li>
+        <li><span class="pill off">배포</span>Argo CD (GitOps) 검토</li>
+      </ul></div>
+  </div>
+</section>
+
+<footer>상세 문서: claudharmony-infra 저장소 <code>docs/</code> (01 아키텍처 ~ 12 인증 서버), 작업 기록 1~50. 이 페이지의 상태 값은 2026-10-25 확인 시점 기준입니다.</footer>
+</div>
+</body>
+</html>

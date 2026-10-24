@@ -622,6 +622,14 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 흐름: 홈페이지 로그인(admin 계정) → 헤더 '관리자' → https://console.claudharmony.io (Keycloak 세션으로 SSO)
 
 ---
+### 51. 시스템 지도 (한 장 HTML)
+
+- 사용자: "지금 구축되어 있는 시스템들 정리해서 html로" → `docs/system-map.html`, Obsidian `시스템 지도.html`
+- 내용: 주소와 상태, 요청 경로 그림, Namespace별 구성(실제 이미지 태그), Terraform 스택과 적용 방식, 배포 흐름, Keycloak, 데이터, 자주 쓰는 명령, 보안 경계, 남은 일
+- 값은 2026-10-25 클러스터에서 직접 확인 (노드·Deployment 이미지·CNPG 상태·도메인 응답)
+- 공개 저장소용이라 IP·터널 ID·계정 정보 없음
+
+---
 
 ## 템플릿 (다음 작업용)
 

@@ -47,6 +47,10 @@ for k, v in CONF.get("replacements", {}).items():
     html = html.replace(k, v)
 (VAULT / "인프라 문서.html").write_text(html, encoding="utf-8")
 
+# 한 장짜리 시스템 지도
+if (DOCS / "system-map.html").is_file():
+    shutil.copy(DOCS / "system-map.html", VAULT / "시스템 지도.html")
+
 # 스크린샷 등 이미지 — md·html 모두 images/... 상대 경로로 참조
 if (DOCS / "images").is_dir():
     shutil.copytree(DOCS / "images", VAULT / "images", dirs_exist_ok=True)

@@ -502,6 +502,21 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 **배운 점**: 인증 서버는 "공개할 경로"를 먼저 정한다. 토큰 issuer는 하나(공개 주소)로 고정하고, 서버끼리 통신만 클러스터 안 주소로.
 
 ---
+### 41. 장애: Docker VM 메모리 고갈 → prd·dev 502/530 (약 15분)
+
+- 증상: edge apply 직후 공개 로그인 화면 확인 중 `auth`·prd·dev 모두 502/530, `kubectl` TLS handshake timeout, Docker VM CPU 900%
+- 노드 안에서 확인: 메모리 7.8GB 중 남은 것 93MB, **swap 1GB 전부 사용**, load average 550, `/proc/pressure/memory` full 52~59% → 거의 모든 Pod가 두 번 연속 재시작
+- 원인: Docker Desktop VM(7.65GB) 하나에 여러 프로젝트가 함께 떠 있음
+  - claudharmony kind 클러스터 (+ 이번에 추가한 Keycloak ~600Mi, DB ~70Mi)
+  - 다른 kind 클러스터 `ch4` (노드 3개, ~1.2GB)
+  - Airflow·Qdrant `digest_*` 컨테이너 (~1.5GB)
+  - 장애 직전에 뜬 로컬 컨테이너 `dev-keycloak-1` (~600Mi, 이후 사라짐)
+- 조치: 클러스터 안 Keycloak `replicas=0` (`kubectl scale`, Terraform 상태와 다름) → 메모리 압박 0, prd·dev 200 복구. `auth.claudharmony.io`는 503
+- 다음: Docker Desktop 메모리 **16GB 이상**으로 증설 (Mac 본체 48GB) → `scripts/infra.sh identity apply`로 Keycloak 1대 복구 → 공개 로그인 화면 스크린샷
+
+**배운 점**: kind는 노드가 전부 한 Docker VM 안에 있음 → VM 메모리가 클러스터 전체의 한도. 새 구성요소를 올리기 전에 `docker stats`로 **VM 전체**(다른 프로젝트 포함) 여유를 볼 것. swap이 가득 차면 OOM으로 죽지 않고 전체가 느려지면서 연쇄 재시작한다.
+
+---
 
 ## 템플릿 (다음 작업용)
 

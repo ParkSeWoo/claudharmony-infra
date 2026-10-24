@@ -240,7 +240,10 @@ kubectl -n identity logs deploy/keycloak --tail 100
 
 ## 9. 다음
 
-- [ ] `auth.claudharmony.io` DNS (edge apply, 사용자 실행) → 공개 로그인 화면 스크린샷 추가
+> ⚠️ 2026-10-24: Docker VM 메모리 고갈 장애로 Keycloak을 `replicas=0`으로 줄여 둠 ([작업 기록 #41](07-worklog.md)). Docker Desktop 메모리 증설 후 `scripts/infra.sh identity apply`로 복구.
+
+- [x] `auth.claudharmony.io` DNS (edge apply, 사용자 실행) — 공개 경로 200, `/admin`·master 302 확인
+- [ ] 공개 로그인 화면 스크린샷 (Keycloak 복구 후)
 - [ ] 소셜 로그인 키 등록 (Google·카카오부터)
 - [ ] 앱 연동 (앱 세션): web 로그인, api JWT 검증, console `admin` 역할 → Cloudflare Access 대신 Keycloak으로 콘솔 보호
 - [ ] SMTP (비밀번호 재설정·이메일 인증)

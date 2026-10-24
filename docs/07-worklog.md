@@ -560,6 +560,13 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 다음: 앱 세션이 main 배포 workflow(`deploy.sh identity keycloak`)로 첫 테마 이미지 배포 → dev realm `login_theme = "claudharmony"`
 
 ---
+### 46. Keycloak 테마 이미지 첫 배포 + dev realm 테마 적용
+
+- 앱 세션이 claudharmony-keycloak Actions "Deploy"(release/20261024)로 배포 → `deploy.sh identity keycloak claudharmony/keycloak:20261024-39bdf59` 성공. 배포 기록 `platform/identity/images.auto.tfvars.json`, Pod 안 `/opt/keycloak/themes/claudharmony`
+- `platform/realms`: dev realm `login_theme = "claudharmony"` → apply. tester 로그인부터 계정 화면까지 정상
+- 화면 확인: 휴대폰 폭(400px)은 정상. **데스크톱 폭에서 카드가 왼쪽에 붙음**(x≈20px, 아래 링크만 가운데) → 앱 세션에 수정 요청. prd realm은 수정 후 켬
+
+---
 
 ## 템플릿 (다음 작업용)
 

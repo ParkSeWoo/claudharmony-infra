@@ -275,4 +275,4 @@ scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
 - [ ] 앱 연동 (앱 세션): web 로그인, api JWT 검증, console `admin` 역할 → Cloudflare Access 대신 Keycloak으로 콘솔 보호
 - [ ] SMTP (비밀번호 재설정·이메일 인증)
 - [ ] bootstrap client를 영구 `terraform` 서비스 계정으로 교체
-- [ ] 로그인 화면 테마 (클라우드 하모니 브랜드)
+- [~] 로그인 화면 테마 — 이미지 `20261024-39bdf59` 배포, dev realm 적용. 데스크톱 카드 정렬 수정 후 prd

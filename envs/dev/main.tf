@@ -11,9 +11,11 @@ module "env" {
 
   environment = "dev"
   # 빈 목록 = 모든 Host 를 받는 기본(catch-all) 라우트
-  hostnames = ["dev.localhost"]
-  services  = var.services
-  images    = var.images
+  hostnames = ["dev.localhost", "dev.claudharmony.io"]
+  # 외부 공개는 platform/edge 의 고정 도메인 터널이 담당 → 임시(quick) 터널 끔
+  enable_tunnel = false
+  services      = var.services
+  images        = var.images
 }
 
 output "env" {

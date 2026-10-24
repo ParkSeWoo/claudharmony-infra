@@ -15,3 +15,4 @@ app/.gradle/
 .DS_Store
 .idea/
 *.iml
+.generated/

@@ -1,20 +1,20 @@
 name: Infra apply
 
-# 인프라 코드 변경: main 에 머지되면 dev 자동 적용, prd 는 수동 실행
+# 인프라 코드 변경: main 에 머지되면 dev 자동 적용
+# prd / platform(cluster, gateway) 은 수동 실행 (Actions → Infra apply → Run workflow)
 # (앱 배포에 의한 images.auto.tfvars.json 커밋은 [skip ci] 라 여기서 다시 돌지 않는다)
 on:
   push:
     branches: [main]
     paths:
-      - "modules/**"
+      - "modules/k8s/**"
       - "envs/dev/**"
-      - "scripts/**"
   workflow_dispatch:
     inputs:
       environment:
         description: "적용할 환경"
         type: choice
-        options: [dev, prd]
+        options: [dev, prd, gateway, cluster]
         default: dev
 
 concurrency:

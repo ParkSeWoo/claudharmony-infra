@@ -6,16 +6,16 @@ variable "images" {
   type = map(string)
 }
 
-module "stack" {
-  source = "../../modules/stack"
+module "env" {
+  source = "../../modules/k8s/env"
 
-  environment   = "dev"
-  public_port   = 8081
-  enable_tunnel = true
-  services      = var.services
-  images        = var.images
+  environment = "dev"
+  # 빈 목록 = 모든 Host 를 받는 기본(catch-all) 라우트
+  hostnames = ["dev.localhost"]
+  services  = var.services
+  images    = var.images
 }
 
-output "stack" {
-  value = module.stack
+output "env" {
+  value = module.env
 }

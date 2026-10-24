@@ -457,6 +457,11 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 4. 적용 중 주의: 로컬 infra 가 원격보다 뒤처진 상태의 plan 이 **api·web 을 옛 이미지로 되돌리려 함** → 적용 전 발견, `git pull` 후 재plan = Service 1개 추가만. **apply 전에 항상 최신 pull**
 5. readonly 로 INSERT → `permission denied` 확인, IntelliJ 연결 방법·prd 읽기전용 설정 문서화
 
+### 38. DataGrip 으로 DB 연결
+
+- 사용자 보유 도구: JetBrains **DataGrip** → `127.0.0.1:15432`(dev) / `25432`(prd), `readonly` 로 연결 성공
+- 권장: prd 데이터 소스 Read-only + 빨간색 표시
+
 ---
 
 ## 템플릿 (다음 작업용)

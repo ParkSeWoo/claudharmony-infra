@@ -126,7 +126,11 @@ flowchart LR
 - 그래서 `modules/k8s/postgres` 에 **NodePort Service `pg-local`**(dev 31432, prd 32432) + Mac 의 **socat 프록시 컨테이너**(`alpine/socat:1.8.1.1`, `--restart unless-stopped`, 127.0.0.1 바인딩)
 - NodePort 는 호스트 포트 매핑이 없어 **인터넷·사무실 LAN 에서는 닿지 않음** (같은 Mac 의 kind Docker 네트워크 안에서만)
 
-### IntelliJ 에서 보기 (Database 도구)
+### DataGrip / IntelliJ 에서 보기 (2026-10-24 DataGrip 연결 확인)
+
+DataGrip: **Database Explorer → + → Data Source → PostgreSQL**, URL 칸에 `jdbc:postgresql://127.0.0.1:15432/claudharmony` 붙여넣으면 호스트·포트·DB 자동 입력 (prd 는 25432). 이하 절차는 IntelliJ 와 동일.
+
+#### IntelliJ (Database 도구)
 
 1. `scripts/db.sh up` (한 번만)
 2. 오른쪽 **Database** 탭 → **+ → Data Source → PostgreSQL** (드라이버 다운로드 승인)

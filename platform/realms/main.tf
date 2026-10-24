@@ -311,3 +311,68 @@ resource "terraform_data" "master_frontend_url" {
     }
   }
 }
+
+# ── console: 역할을 ID 토큰에 넣어 앱이 바로 확인 (claim "roles") ──
+resource "keycloak_openid_user_realm_role_protocol_mapper" "console_roles" {
+  for_each = local.console_realms
+
+  realm_id            = keycloak_realm.this[each.key].id
+  client_id           = keycloak_openid_client.console[each.key].id
+  name                = "realm-roles"
+  claim_name          = "roles"
+  multivalued         = true
+  add_to_id_token     = true
+  add_to_access_token = true
+  add_to_userinfo     = true
+}
+
+# ── 서비스 관리자 (prd realm, admin 역할) ──
+# 홈페이지 로그인 → console.claudharmony.io 접속에 쓰는 계정. 첫 로그인 때 비밀번호를 바꾸게 한다.
+# 임시 비밀번호: kubectl -n identity get secret keycloak-service-admin -o jsonpath='{.data.password}' | base64 -d
+resource "random_password" "service_admin" {
+  for_each = local.console_realms
+  length   = 20
+  special  = false
+}
+
+resource "keycloak_user" "service_admin" {
+  for_each = local.console_realms
+
+  realm_id       = keycloak_realm.this[each.key].id
+  username       = var.service_admin_username
+  enabled        = true
+  email_verified = true
+  first_name     = "관리자"
+
+  initial_password {
+    value     = random_password.service_admin[each.key].result
+    temporary = true
+  }
+
+  lifecycle {
+    ignore_changes = [initial_password, email, first_name, last_name] # 본인이 바꾼 정보는 되돌리지 않음
+  }
+}
+
+resource "keycloak_user_roles" "service_admin" {
+  for_each = local.console_realms
+
+  realm_id   = keycloak_realm.this[each.key].id
+  user_id    = keycloak_user.service_admin[each.key].id
+  exhaustive = false # 기본 역할(user, account ...)은 그대로 두고 admin 만 더한다
+  role_ids   = [keycloak_role.admin[each.key].id]
+}
+
+resource "kubernetes_secret_v1" "service_admin" {
+  for_each = local.console_realms
+
+  metadata {
+    name      = "keycloak-service-admin"
+    namespace = "identity"
+  }
+  data = {
+    realm    = each.value.realm
+    username = keycloak_user.service_admin[each.key].username
+    password = random_password.service_admin[each.key].result
+  }
+}

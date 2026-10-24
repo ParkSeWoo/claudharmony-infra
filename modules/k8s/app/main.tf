@@ -133,6 +133,28 @@ resource "kubernetes_service_v1" "this" {
 }
 
 # HTTPRoute: Gateway 의 어느 경로/호스트를 이 Service 로 보낼지 (AWS ALB 리스너 규칙)
+#   *.localhost(사무실 Mac, http) 와 공개 도메인(Cloudflare 터널, https)을 다른 HTTPRoute 로 나눈다.
+#   Envoy 는 X-Forwarded-Proto 를 자기 연결(http) 기준으로 덮어쓰므로, 공개 도메인 쪽만 https 로 고정해
+#   앱(Spring forward-headers, OAuth2 redirect_uri 등)이 원래 https 였다는 걸 알게 한다.
+#   hostnames 가 비어 있으면(prd catch-all) 기존처럼 하나만.
+locals {
+  route_hosts_public = var.route == null ? [] : [for h in var.route.hostnames : h if !endswith(h, ".localhost")]
+  route_hosts_local  = var.route == null ? [] : [for h in var.route.hostnames : h if endswith(h, ".localhost")]
+  route_split        = length(local.route_hosts_public) > 0 && length(local.route_hosts_local) > 0
+  route_path         = var.route == null ? "/" : var.route.path
+  route_backend      = [{ name = kubernetes_service_v1.this.metadata[0].name, port = 80 }]
+  actuator_redirect  = { type = "RequestRedirect", requestRedirect = { path = { type = "ReplaceFullPath", replaceFullPath = "/" }, statusCode = 302 } }
+  force_https        = { type = "RequestHeaderModifier", requestHeaderModifier = { set = [{ name = "X-Forwarded-Proto", value = "https" }] } }
+  route_rules = [
+    { matches = [{ path = { type = "PathPrefix", value = "/actuator" } }], filters = [local.actuator_redirect] },
+    { matches = [{ path = { type = "PathPrefix", value = local.route_path } }], backendRefs = local.route_backend },
+  ]
+  route_rules_public = [
+    { matches = [{ path = { type = "PathPrefix", value = "/actuator" } }], filters = [local.actuator_redirect] },
+    { matches = [{ path = { type = "PathPrefix", value = local.route_path } }], filters = [local.force_https], backendRefs = local.route_backend },
+  ]
+}
+
 resource "kubectl_manifest" "route" {
   count = var.route == null ? 0 : 1
 
@@ -143,18 +165,25 @@ resource "kubectl_manifest" "route" {
     spec = merge(
       {
         parentRefs = [{ name = var.gateway.name, namespace = var.gateway.namespace }]
-        rules = [
-          {
-            matches = [{ path = { type = "PathPrefix", value = "/actuator" } }]
-            filters = [{ type = "RequestRedirect", requestRedirect = { path = { type = "ReplaceFullPath", replaceFullPath = "/" }, statusCode = 302 } }]
-          },
-          {
-            matches     = [{ path = { type = "PathPrefix", value = var.route.path } }]
-            backendRefs = [{ name = kubernetes_service_v1.this.metadata[0].name, port = 80 }]
-          },
-        ]
+        rules      = local.route_rules
       },
-      length(var.route.hostnames) > 0 ? { hostnames = var.route.hostnames } : {}
+      # 나눌 때는 localhost 만, 아니면 전체(빈 목록 = catch-all)
+      local.route_split ? { hostnames = local.route_hosts_local } : (length(var.route.hostnames) > 0 ? { hostnames = var.route.hostnames } : {})
     )
+  })
+}
+
+resource "kubectl_manifest" "route_public" {
+  count = local.route_split ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata   = { name = "${var.name}-public", namespace = var.namespace, labels = local.labels }
+    spec = {
+      parentRefs = [{ name = var.gateway.name, namespace = var.gateway.namespace }]
+      hostnames  = local.route_hosts_public
+      rules      = local.route_rules_public
+    }
   })
 }

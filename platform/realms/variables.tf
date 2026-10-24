@@ -75,3 +75,9 @@ variable "master_frontend_url" {
   type        = string
   default     = "http://auth.localhost"
 }
+
+variable "service_admin_username" {
+  description = "prd realm 관리자 아이디 (admin 역할 — console 접속)"
+  type        = string
+  default     = "admin"
+}

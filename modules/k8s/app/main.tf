@@ -138,19 +138,20 @@ resource "kubernetes_service_v1" "this" {
 #   앱(Spring forward-headers, OAuth2 redirect_uri 등)이 원래 https 였다는 걸 알게 한다.
 #   hostnames 가 비어 있으면(prd catch-all) 기존처럼 하나만.
 locals {
-  route_hosts_public = var.route == null ? [] : [for h in var.route.hostnames : h if !endswith(h, ".localhost")]
-  route_hosts_local  = var.route == null ? [] : [for h in var.route.hostnames : h if endswith(h, ".localhost")]
-  route_split        = length(local.route_hosts_public) > 0 && length(local.route_hosts_local) > 0
-  route_path         = var.route == null ? "/" : var.route.path
-  route_backend      = [{ name = kubernetes_service_v1.this.metadata[0].name, port = 80 }]
-  actuator_redirect  = { type = "RequestRedirect", requestRedirect = { path = { type = "ReplaceFullPath", replaceFullPath = "/" }, statusCode = 302 } }
-  force_https        = { type = "RequestHeaderModifier", requestHeaderModifier = { set = [{ name = "X-Forwarded-Proto", value = "https" }] } }
+  route_hosts_public      = var.route == null ? [] : [for h in var.route.hostnames : h if !endswith(h, ".localhost")]
+  route_hosts_local       = var.route == null ? [] : [for h in var.route.hostnames : h if endswith(h, ".localhost")]
+  route_split             = length(local.route_hosts_public) > 0 && length(local.route_hosts_local) > 0
+  route_path              = var.route == null ? "/" : var.route.path
+  route_backend           = [{ name = kubernetes_service_v1.this.metadata[0].name, port = 80 }]
+  actuator_redirect       = { type = "RequestRedirect", requestRedirect = { path = { type = "ReplaceFullPath", replaceFullPath = "/" }, statusCode = 302 } }
+  force_https             = { type = "RequestHeaderModifier", requestHeaderModifier = { set = [{ name = "X-Forwarded-Proto", value = "https" }] } }
+  actuator_redirect_https = { type = "RequestRedirect", requestRedirect = { scheme = "https", path = { type = "ReplaceFullPath", replaceFullPath = "/" }, statusCode = 302 } }
   route_rules = [
     { matches = [{ path = { type = "PathPrefix", value = "/actuator" } }], filters = [local.actuator_redirect] },
     { matches = [{ path = { type = "PathPrefix", value = local.route_path } }], backendRefs = local.route_backend },
   ]
   route_rules_public = [
-    { matches = [{ path = { type = "PathPrefix", value = "/actuator" } }], filters = [local.actuator_redirect] },
+    { matches = [{ path = { type = "PathPrefix", value = "/actuator" } }], filters = [local.actuator_redirect_https] },
     { matches = [{ path = { type = "PathPrefix", value = local.route_path } }], filters = [local.force_https], backendRefs = local.route_backend },
   ]
 }

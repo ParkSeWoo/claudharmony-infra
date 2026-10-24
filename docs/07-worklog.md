@@ -596,6 +596,23 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 6. **DNS**: `platform/edge` hostnames에 `console.claudharmony.io` 추가 (plan: DNS 1, 터널 설정 1). 적용은 사용자 확인 후 사용자가 실행
 
 ---
+### 49. console.claudharmony.io 공개 + dev web 이미지 되돌림 사고와 재발 방지
+
+- 사용자가 `edge apply` 실행 → `console.claudharmony.io` DNS·터널 추가
+  - 확인: 비로그인 `/`, `/env/prd` → Keycloak 로그인으로 302, redirect_uri `https://console.claudharmony.io/login/oauth2/code/keycloak`
+  - 로컬 DNS가 새 레코드를 바로 못 받아 처음엔 000 → Cloudflare IP로 `--resolve` 해서 확인
+- 공개 route의 `/actuator` 리다이렉트가 `http://`로 나가던 것 → 공개 route만 `scheme = "https"`
+- **사고**: 위 수정을 dev에 apply하는 사이 앱 세션이 web `dev-197c9bc`를 배포 → 내 로컬 배포 기록(`dev-9f36e2e`)이 뒤처진 채 apply되어 **dev web이 이전 이미지로 되돌아감** (약 2분). pull 후 재적용으로 복구
+- **재발 방지** (`scripts/infra.sh`): `images.auto.tfvars.json`이 있는 스택(dev/prd/console/identity)의 apply는
+  1. `deploy.sh`와 같은 잠금(`~/.claudharmony/deploy.lock`)을 잡고
+  2. `git fetch` 후 배포 기록이 `origin/main`과 다르면 **거부** ("git pull --rebase 후 다시")
+  - `deploy.sh`는 이미 잠금을 잡고 기록을 갱신한 뒤 부르므로 `CLAUDHARMONY_DEPLOY_LOCKED=1`로 건너뜀
+  - 시험: 정상 → 적용·잠금 해제, 3커밋 뒤처진 복제본 → 거부
+- 앱 세션: 홈페이지 '관리자' 링크(web #18, admin 역할일 때만, prd → console.claudharmony.io), dev에서 tester 로그인 → /me → 로그아웃 확인. prd는 사용자 승인 후 release
+
+**배운 점**: "apply 전에 pull"은 사람이 기억하는 규칙이 아니라 스크립트가 강제해야 한다. 같은 state를 여러 곳(러너·세션)이 바꾸면 잠금과 기록 확인이 함께 필요하다.
+
+---
 
 ## 템플릿 (다음 작업용)
 

@@ -30,6 +30,7 @@ done
 [ "$GOT_LOCK" = 1 ] || { echo "::error::배포 잠금 대기 시간 초과 ($LOCK) — 멈춘 배포가 없으면 디렉토리 삭제"; exit 1; }
 echo "$$ $ENV_NAME/$SERVICE $(date '+%F %T')" > "$LOCK/owner"
 trap 'rm -rf "$LOCK"' EXIT
+export CLAUDHARMONY_DEPLOY_LOCKED=1   # infra.sh apply 가 같은 잠금을 다시 잡지 않게
 kind load docker-image "$IMAGE" --name "${KIND_CLUSTER:-claudharmony}"
 
 cd "$ROOT"

@@ -64,11 +64,34 @@ tf_init() {
 }
 approve_flag() { [ "${AUTO_APPROVE:-0}" = "1" ] && echo "-auto-approve" || true; }
 
+# 손으로 apply 할 때도 deploy.sh 와 같은 잠금을 잡고, 배포 기록이 원격보다 뒤처졌으면 거부한다.
+# (뒤처진 images.auto.tfvars.json 으로 apply 하면 다른 세션·러너가 막 배포한 이미지를 이전 것으로 되돌린다 — 작업 기록 #49)
+# deploy.sh 는 이미 잠금을 잡고 기록을 갱신한 뒤 부르므로 CLAUDHARMONY_DEPLOY_LOCKED=1 로 건너뛴다.
+guard_images() {
+  [ -f "$TF_DIR/images.auto.tfvars.json" ] || return 0
+  [ "${CLAUDHARMONY_DEPLOY_LOCKED:-0}" = 1 ] && return 0
+  LOCK="$HOME/.claudharmony/deploy.lock"
+  for i in $(seq 1 120); do
+    mkdir "$LOCK" 2>/dev/null && break
+    [ "$i" = 1 ] && echo "배포 진행 중 — 대기: $(cat "$LOCK/owner" 2>/dev/null)"
+    [ "$i" = 120 ] && { echo "잠금 대기 시간 초과 ($LOCK)"; exit 1; }
+    sleep 5
+  done
+  echo "$$ manual $ENV_NAME $(date '+%F %T')" > "$LOCK/owner"
+  trap 'rm -rf "$LOCK"' EXIT
+  git -C "$ROOT" fetch --quiet origin main
+  REL="${TF_DIR#"$ROOT"/}/images.auto.tfvars.json"
+  if ! git -C "$ROOT" diff --quiet HEAD origin/main -- "$REL"; then
+    echo "❌ $REL 가 원격(main)보다 뒤처짐 — 다른 곳에서 배포됨. git pull --rebase 후 다시 실행"
+    exit 1
+  fi
+}
+
 case "$CMD" in
   init)    tf_init ;;
   # 여러 서비스 배포가 겹치면 state lock 을 최대 10분 기다린다
   plan)    tf_init && tf plan -input=false -lock-timeout=10m ;;
-  apply)   tf_init && tf apply -input=false -lock-timeout=10m $(approve_flag) ;;
+  apply)   guard_images && tf_init && tf apply -input=false -lock-timeout=10m $(approve_flag) ;;
   destroy) tf_init && tf destroy $(approve_flag) ;;
   status)
     case "$ENV_NAME" in

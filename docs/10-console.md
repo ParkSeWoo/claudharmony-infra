@@ -6,7 +6,7 @@ AWS/GCP 콘솔처럼 사무실 Kubernetes 인프라를 한 화면에서 보는 �
 | 주소 | 상태 |
 |------|------|
 | http://console.localhost | ✅ 사무실 Mac |
-| https://console.claudharmony.io | ⏳ Keycloak 로그인 적용 완료(2026-10-25). 관리자 첫 로그인 확인 후 `edge apply`로 DNS 공개 |
+| https://console.claudharmony.io | ✅ 2026-10-25 공개 — Keycloak 로그인, admin 역할만 |
 
 ## 1단계 — 조회 전용 (2026-10-24)
 

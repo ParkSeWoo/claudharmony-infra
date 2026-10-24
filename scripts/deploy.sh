@@ -38,10 +38,13 @@ if ! git diff --quiet -- "$IMAGES_FILE"; then
   git add "$IMAGES_FILE"
   git -c user.name="claudharmony-deploy" -c user.email="deploy@claudharmony.local" \
     commit --quiet -m "deploy($ENV_NAME): $SERVICE=$IMAGE [skip ci]"
+  PUSHED=0
   for _ in 1 2 3; do
-    git push --quiet origin HEAD:main && break
-    git pull --rebase --quiet origin main
+    if git push --quiet origin HEAD:main; then PUSHED=1; break; fi
+    git pull --rebase --quiet origin main || true
   done
+  # 배포는 끝났지만 기록이 Git 에 안 남으면 이후 apply 가 이전 이미지로 되돌릴 수 있다 → 실패로 알림
+  [ "$PUSHED" = 1 ] || { echo "::error::배포 기록 push 실패 — scripts/setup-deploy-key.sh 확인"; exit 1; }
 fi
 
 echo "✅ $ENV_NAME/$SERVICE → $IMAGE"

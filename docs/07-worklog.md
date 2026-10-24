@@ -25,7 +25,7 @@
 | 12 | 파이프라인 E2E — dev | ✅ `dev-c0184f6` 자동 배포 |
 | 13 | 파이프라인 E2E — prd | ✅ `20261024-c0184f6` 수동 배포 + 기록 자동 커밋 |
 | 14 | web / api 분리 — 카탈로그·동시배포 잠금 | ✅ |
-| 15 | api / web 러너 등록 | ⏳ 사용자 실행 |
+| 15 | api / web 러너 등록 | ✅ (사용자 실행, 러너 4개 online) |
 | 16 | dev 에 api → web 배포, hello-app 제거 | ⏳ 러너 등록 후 (ai-root-78 이 develop push) |
 
 ---
@@ -229,6 +229,17 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 4. 러너 등록(api, web)은 사용자 실행 필요: `scripts/setup-runner.sh claudharmony-api claudharmony-web`
 
 **배운 점**: Gateway API 에서 같은 경로의 HTTPRoute 가 겹치면 **생성 시각이 오래된 라우트가 우선** → 새 서비스를 먼저 띄우고 옛 라우트를 지우는 방식으로 무중단 전환 가능
+
+### 19. api / web 러너 등록
+
+- 사용자가 `scripts/setup-runner.sh claudharmony-api claudharmony-web` 실행 → 2개 online
+- 등록 직후 infra 러너가 **offline** 으로 표시
+
+**원인**: 직전 Infra apply 잡을 끝낸 뒤 GitHub 브로커 연결이 끊김 (`SocketException (89): Operation canceled`) — 러너가 자동 재시도(backoff)
+**조치**: 재부팅 아님(uptime 41일), launchd 프로세스 살아 있음 확인 → 1분 내 **online 복귀**
+**배운 점**: 러너 상태는 `gh api repos/<r>/actions/runners`, 원인은 `~/.claudharmony/runners/<repo>/_diag/Runner_*.log`
+
+- 다른 세션(ai-root-78)에 준비 완료 알림 → 다음: develop push 로 dev 에 api → web 배포
 
 ---
 

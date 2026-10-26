@@ -53,6 +53,27 @@ print(json.dumps({n:{"client_id":os.environ[f"{n.upper()}_CLIENT_ID"],"client_se
   for n in ("google","github","kakao","naver") if os.environ.get(f"{n.upper()}_CLIENT_ID")}))')"
   export TF_VAR_social
 fi
+# dev·prd: 외부 서비스 키 (저장소 밖, chmod 600) → Secret app-secrets. 파일 형식: YOUTUBE_API_KEY=...
+#   변수 이름을 소문자·하이픈으로 바꿔 Secret 키로 쓴다 (YOUTUBE_API_KEY → youtube-api-key)
+if [ "$ENV_NAME" = dev ] || [ "$ENV_NAME" = prd ]; then
+  APP_ENV_FILE="$HOME/.claudharmony/app-secrets.env"
+  TF_VAR_app_secrets="$(python3 - "$APP_ENV_FILE" <<'PY'
+import json, os, sys
+out = {}
+p = sys.argv[1]
+if os.path.exists(p):
+    for line in open(p):
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            v = v.strip().strip('"').strip("'")
+            if v:
+                out[k.strip().lower().replace("_", "-")] = v
+print(json.dumps(out))
+PY
+)"
+  export TF_VAR_app_secrets
+fi
 STATE_DIR="${CLAUDHARMONY_STATE_DIR:-$HOME/.claudharmony/state}"
 
 [ -d "$TF_DIR" ] || { echo "unknown env: $ENV_NAME"; exit 1; }

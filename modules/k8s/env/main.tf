@@ -22,6 +22,17 @@ resource "kubernetes_namespace_v1" "this" {
   }
 }
 
+# 앱 비밀값 (외부 API 키 등) — 서비스는 카탈로그 secret_env 에서 { secret = "app-secrets", key = ..., optional = true } 로 읽는다.
+# 키가 아직 없으면 빈 Secret 이라 optional 참조는 변수 없이 뜬다. 값은 tfstate(저장소 밖)에만 남는다.
+resource "kubernetes_secret_v1" "app" {
+  metadata {
+    name      = "app-secrets"
+    namespace = kubernetes_namespace_v1.this.metadata[0].name
+    labels    = { "app.kubernetes.io/managed-by" = "terraform" }
+  }
+  data = var.app_secrets
+}
+
 # 데이터베이스 (환경별 1개)
 module "postgres" {
   source = "../postgres"
@@ -39,8 +50,8 @@ locals {
   # database = true 인 서비스에 주입할 접속 정보 (비밀번호는 Secret 참조)
   db_env = var.database == null ? {} : { SPRING_DATASOURCE_URL = module.postgres[0].jdbc_url }
   db_secret_env = var.database == null ? {} : {
-    SPRING_DATASOURCE_USERNAME = { secret = module.postgres[0].app_secret, key = "username" }
-    SPRING_DATASOURCE_PASSWORD = { secret = module.postgres[0].app_secret, key = "password" }
+    SPRING_DATASOURCE_USERNAME = { secret = module.postgres[0].app_secret, key = "username", optional = false }
+    SPRING_DATASOURCE_PASSWORD = { secret = module.postgres[0].app_secret, key = "password", optional = false }
   }
 }
 

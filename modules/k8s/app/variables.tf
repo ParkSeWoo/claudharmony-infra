@@ -28,10 +28,11 @@ variable "env" {
 }
 
 variable "secret_env" {
-  description = "Secret 에서 읽는 환경 변수: 이름 → { secret, key }"
+  description = "Secret 에서 읽는 환경 변수: 이름 → { secret, key, optional }. optional = true 면 키가 없어도 Pod 가 뜬다(변수만 빠짐)"
   type = map(object({
-    secret = string
-    key    = string
+    secret   = string
+    key      = string
+    optional = optional(bool, false)
   }))
   default = {}
 }

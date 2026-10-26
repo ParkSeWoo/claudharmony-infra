@@ -38,7 +38,7 @@ variable "services" {
     database        = optional(bool, false) # true 면 PostgreSQL 접속 정보(SPRING_DATASOURCE_*) 주입
     service_account = optional(string)      # K8s API 를 쓰는 서비스용
     # Secret 값을 환경변수로 (예: Keycloak 접속 정보 — platform/realms 가 Namespace 에 만든 keycloak-web / keycloak-api)
-    secret_env = optional(map(object({ secret = string, key = string })), {})
+    secret_env = optional(map(object({ secret = string, key = string, optional = optional(bool, false) })), {})
   }))
 }
 
@@ -56,4 +56,11 @@ variable "database" {
 variable "images" {
   description = "배포된 이미지 (images.auto.tfvars.json — 배포 워크플로가 갱신). key = 서비스 이름"
   type        = map(string)
+}
+
+variable "app_secrets" {
+  description = "외부 서비스 키 등 앱 비밀값 → Secret app-secrets (키 이름 → 값). 값은 저장소 밖 ~/.claudharmony/app-secrets.env 에서 scripts/infra.sh 가 넣는다"
+  type        = map(string)
+  default     = {}
+  sensitive   = true
 }

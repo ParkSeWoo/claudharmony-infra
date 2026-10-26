@@ -69,8 +69,9 @@ resource "kubernetes_deployment_v1" "this" {
               name = env.key
               value_from {
                 secret_key_ref {
-                  name = env.value.secret
-                  key  = env.value.key
+                  name     = env.value.secret
+                  key      = env.value.key
+                  optional = env.value.optional
                 }
               }
             }

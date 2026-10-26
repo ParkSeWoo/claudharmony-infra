@@ -6,6 +6,12 @@ variable "images" {
   type = map(string)
 }
 
+variable "app_secrets" {
+  type      = map(string)
+  default   = {}
+  sensitive = true
+}
+
 module "env" {
   source = "../../modules/k8s/env"
 
@@ -17,8 +23,9 @@ module "env" {
   # PostgreSQL 18 + PostGIS (CloudNativePG) — 앱 계정 접속 정보는 database = true 인 서비스에 주입
   database = { instances = 1, storage_size = "5Gi", local_port = 31432, memory_mb = 384 }
 
-  services = var.services
-  images   = var.images
+  services    = var.services
+  images      = var.images
+  app_secrets = var.app_secrets
 }
 
 output "env" {

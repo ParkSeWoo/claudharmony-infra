@@ -631,6 +631,18 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 공개 저장소용이라 IP·터널 ID·계정 정보 없음
 
 ---
+### 52. 앱 비밀값 Secret `app-secrets` + YouTube API 키 연결
+
+- 앱 세션 요청: api의 유튜브 국내 인기 동영상(api #24)용 `YOUTUBE_API_KEY` (dev·prd)
+- 방식: 저장소 밖 `~/.claudharmony/app-secrets.env`(chmod 600, 틀 생성) → `scripts/infra.sh dev|prd`가 `TF_VAR_app_secrets`로 → `modules/k8s/env`가 Namespace마다 Secret `app-secrets`
+  - 변수 이름 → Secret 키: `YOUTUBE_API_KEY` → `youtube-api-key`
+  - 카탈로그 `secret_env`에 `optional` 추가 → `secret_key_ref.optional`. 키가 아직 없으면 Pod는 뜨고 변수만 빠짐
+- dev apply: Secret(빈 값) 생성, api 재배포 정상, `YOUTUBE_API_KEY` 없음(예상), dev 200
+- prd: 카탈로그·모듈은 main에 반영. apply는 사용자 실행 또는 다음 prd 배포 때
+- 키 발급(사용자): Google Cloud Console → YouTube Data API v3 사용 설정 → 사용자 인증 정보 → API 키 → "API 제한: YouTube Data API v3"
+- 외부 요청 `https://www.googleapis.com` — 클러스터에 egress 제한(NetworkPolicy) 없음
+
+---
 
 ## 템플릿 (다음 작업용)
 

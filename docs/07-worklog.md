@@ -643,6 +643,15 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - 외부 요청 `https://www.googleapis.com` — 클러스터에 egress 제한(NetworkPolicy) 없음
 
 ---
+### 53. YouTube API 키 dev 적용 + Secret 변경 시 자동 재시작
+
+- 사용자가 `~/.claudharmony/app-secrets.env`에 `YOUTUBE_API_KEY` 입력 (앱 세션 확인: 39자, API 제한 YouTube Data API v3)
+- **문제**: Secret 값만 바뀌면 Kubernetes는 Pod를 다시 띄우지 않음 → env는 컨테이너 시작 때 한 번 읽히므로 api가 계속 키 없이 돎
+- **해결**: app 모듈에 `pod_annotations`. env 모듈이 `app-secrets`를 읽는 서비스에만 `claudharmony.io/app-secrets-hash`(값 해시 앞 16자)를 붙임 → 키가 바뀌면 그 서비스만 롤링 재시작
+- dev apply: Secret 갱신 + api 재시작 → Pod 안 키 39자 확인, 기동 직후 `trend 수집: source=YOUTUBE_KR_POPULAR, keywords=10, saved=true`
+- prd: 사용자 승인 후 `scripts/infra.sh prd apply` (자동 권한 검사가 prd apply를 막음)
+
+---
 
 ## 템플릿 (다음 작업용)
 

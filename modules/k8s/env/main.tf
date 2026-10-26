@@ -68,8 +68,12 @@ module "service" {
   env             = merge({ APP_ENV = var.environment }, each.value.database ? local.db_env : {}, each.value.env)
   secret_env      = merge(each.value.database ? local.db_secret_env : {}, each.value.secret_env)
   service_account = each.value.service_account
-  gateway         = var.gateway
-  route           = each.value.route_path == null ? null : { path = each.value.route_path, hostnames = var.hostnames }
+  # env 는 컨테이너가 뜰 때 한 번 읽히므로, app-secrets 값이 바뀌면 그 Secret 을 쓰는 서비스만 다시 띄운다
+  pod_annotations = anytrue([for e in values(each.value.secret_env) : e.secret == "app-secrets"]) ? {
+    "claudharmony.io/app-secrets-hash" = substr(sha256(nonsensitive(sha256(jsonencode(var.app_secrets)))), 0, 16)
+  } : {}
+  gateway = var.gateway
+  route   = each.value.route_path == null ? null : { path = each.value.route_path, hostnames = var.hostnames }
 }
 
 module "tunnel" {

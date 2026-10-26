@@ -73,7 +73,7 @@ git checkout develop && git merge origin/main && git push      # back-merge
 | 6 | 서비스 이름 = 카탈로그 key = Deployment/Service 이름 = 내부 DNS | `envs/*/services.auto.tfvars.json` |
 | 7 | `"database": true` 면 `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` 주입 (PostgreSQL `pg-rw`). **스키마는 `db/schema.sql`(Atlas)** — 앱은 스키마를 바꾸지 않음, prd 는 `DB schema prd` → `Deploy prd` 순서 | [데이터베이스](09-database.md) |
 | 8 | Keycloak 접속 정보는 카탈로그 `secret_env`로 (Secret `keycloak-web` / `keycloak-api`) | [인증 서버](12-identity.md) 6절 |
-| 9 | 외부 서비스 키는 Secret `app-secrets`에서 **optional**로 읽음 (키가 없어도 Pod가 뜨고 변수만 빠짐). 값은 Mac의 `~/.claudharmony/app-secrets.env` (`YOUTUBE_API_KEY=...` → Secret 키 `youtube-api-key`) | `modules/k8s/env` · `scripts/infra.sh` |
+| 9 | 외부 서비스 키는 Secret `app-secrets`에서 **optional**로 읽음 (키가 없어도 Pod가 뜨고 변수만 빠짐). 값은 Mac의 `~/.claudharmony/app-secrets.env` (`YOUTUBE_API_KEY=...` → Secret 키 `youtube-api-key`). 값이 바뀌면 그 Secret을 쓰는 서비스만 자동 재시작(Pod annotation 해시) | `modules/k8s/env` · `scripts/infra.sh` |
 
 ### 서비스 카탈로그 (dev / prd 동일)
 

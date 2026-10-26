@@ -80,3 +80,9 @@ variable "service_account" {
   type        = string
   default     = null
 }
+
+variable "pod_annotations" {
+  description = "Pod 템플릿 annotation — 값이 바뀌면 Pod 가 다시 뜬다 (예: 읽는 Secret 의 해시)"
+  type        = map(string)
+  default     = {}
+}

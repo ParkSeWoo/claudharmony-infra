@@ -39,7 +39,8 @@ resource "kubernetes_deployment_v1" "this" {
 
     template {
       metadata {
-        labels = local.labels
+        labels      = local.labels
+        annotations = var.pod_annotations
       }
 
       spec {

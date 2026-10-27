@@ -653,6 +653,22 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 ---
 
+### 54. 새 도메인 cloudharmony.io — 1단계 병행 서비스 (진행 중)
+
+- 배경: 철자 수정(claudharmony → cloudharmony). 사용자가 cloudharmony.io 구입(Cloudflare, 같은 계정). 순서: ① 두 도메인 병행 → ② Keycloak 발급자(KC_HOSTNAME) 전환 → ③ 옛 도메인 301
+- 코드 (`2264071`):
+  - edge: `domain`·`hostnames` → `zones`(zone → 호스트 목록). `data.cloudflare_zone`에 for_each. DNS 레코드 key는 호스트 이름 그대로라 기존 레코드는 다시 만들지 않음
+  - dev·console HTTPRoute에 `dev.`·`console.cloudharmony.io` 추가 (prd는 catch-all이라 그대로)
+  - identity: `public_aliases`(auth.cloudharmony.io)를 공개 라우트에 추가. 발급자(iss)는 아직 auth.claudharmony.io 하나
+  - realms: web(prd·dev)·console client의 redirect / post-logout / web origins에 새 도메인 추가, root_url은 새 도메인
+- apply (사용자 실행): identity 1 change, realms 4 change(+ prd 관리자 `email_verified` 드리프트 정리), dev 1 change, console 1 add(빈 app-secrets) + 1 change
+- **문제**: edge plan `failed to find exactly one result … 0 found` (`data.cloudflare_zone.this["cloudharmony.io"]`)
+  **원인**: API 토큰의 Zone Resources가 claudharmony.io 하나로 지정 — `/zones` 결과에 옛 도메인만 보임
+  **해결**: 토큰 Edit → Zone Resources에 cloudharmony.io(또는 All zones) 추가 (대기 중)
+- 블로그용 스크린샷: `docs/images/domain/01~07` (앱 세션이 블로그 글 작성)
+
+---
+
 ## 템플릿 (다음 작업용)
 
 ```markdown

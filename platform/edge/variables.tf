@@ -55,5 +55,5 @@ variable "console_allowed_emails" {
 variable "redirect_zones" {
   description = "옛 도메인 → 새 도메인 301 (Cloudflare Single Redirect). 같은 서브도메인·경로·쿼리로 보낸다. 빈 map = 끔"
   type        = map(string)
-  default     = {}
+  default     = { "claudharmony.io" = "cloudharmony.io" }
 }

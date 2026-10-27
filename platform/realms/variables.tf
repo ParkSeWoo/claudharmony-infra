@@ -20,7 +20,7 @@ variable "keycloak_client_secret" {
 variable "public_base" {
   description = "토큰 issuer 앞부분 (platform/identity 의 공개 주소)"
   type        = string
-  default     = "https://auth.claudharmony.io"
+  default     = "https://auth.cloudharmony.io"
 }
 
 variable "internal_base" {

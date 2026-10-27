@@ -23,19 +23,19 @@ variable "images" {
 variable "public_hostname" {
   description = "로그인 화면·토큰 발급 주소 (인터넷 공개, Cloudflare 터널 경유)"
   type        = string
-  default     = "auth.claudharmony.io"
+  default     = "auth.cloudharmony.io"
 }
 
 variable "public_aliases" {
-  description = "공개 주소와 같은 로그인 경로를 받는 다른 호스트 (도메인 이전 병행 기간). 토큰 발급자(iss)는 public_hostname 하나로 고정"
+  description = "공개 주소와 같은 로그인 경로를 받는 다른 호스트 (옛 도메인 — Cloudflare 301 이 켜지면 여기까지 오지 않음). 토큰 발급자(iss)는 public_hostname 하나로 고정"
   type        = list(string)
-  default     = ["auth.cloudharmony.io"]
+  default     = ["auth.claudharmony.io"]
 }
 
 variable "home_hostname" {
   description = "공개 주소에서 로그인 외 경로(/admin 등)를 돌려보낼 서비스 홈"
   type        = string
-  default     = "claudharmony.io"
+  default     = "cloudharmony.io"
 }
 
 variable "admin_hostname" {

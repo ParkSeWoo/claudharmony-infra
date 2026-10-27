@@ -327,7 +327,7 @@ resource "keycloak_openid_user_realm_role_protocol_mapper" "console_roles" {
 }
 
 # ── 서비스 관리자 (prd realm, admin 역할) ──
-# 홈페이지 로그인 → console.claudharmony.io 접속에 쓰는 계정. 첫 로그인 때 비밀번호를 바꾸게 한다.
+# 홈페이지 로그인 → console.cloudharmony.io 접속에 쓰는 계정. 첫 로그인 때 비밀번호를 바꾸게 한다.
 # 임시 비밀번호: kubectl -n identity get secret keycloak-service-admin -o jsonpath='{.data.password}' | base64 -d
 resource "random_password" "service_admin" {
   for_each = local.console_realms

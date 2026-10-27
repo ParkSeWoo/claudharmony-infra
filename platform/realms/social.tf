@@ -5,7 +5,7 @@
 #   kakao  : Kakao Developers → 카카오 로그인 (OpenID Connect 활성화)
 #   naver  : OIDC 미지원 → Keycloak 기본 OAuth 2.0 공급자(provider_id "oauth2")로. 사용자 정보는 response.* 아래에 있다
 #            alias 는 "naver" 고정 — 로그인 테마(claudharmony-keycloak)가 alias 로 버튼 색을 입힌다
-#   각 서비스에 등록할 redirect URI: https://auth.claudharmony.io/realms/<realm>/broker/<alias>/endpoint
+#   각 서비스에 등록할 redirect URI: https://auth.cloudharmony.io/realms/<realm>/broker/<alias>/endpoint
 #
 #   지금은 prd·dev realm 모두에 같은 앱을 붙인다 (서비스 콘솔에 redirect URI 두 개 등록)
 

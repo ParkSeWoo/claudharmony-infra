@@ -144,3 +144,33 @@ resource "kubernetes_deployment_v1" "cloudflared" {
     }
   }
 }
+
+# ⑤ 옛 도메인 301 — Cloudflare 엣지에서 바로 돌려보낸다 (터널·클러스터까지 오지 않음)
+#   https://dev.claudharmony.io/a?b=1 → https://dev.cloudharmony.io/a?b=1
+#   DNS 레코드는 남겨 둔다 (proxied 레코드가 있어야 Cloudflare 가 요청을 받아 규칙을 적용)
+resource "cloudflare_ruleset" "redirect" {
+  for_each = var.redirect_zones
+
+  zone_id     = data.cloudflare_zone.this[each.key].zone_id
+  name        = "redirect ${each.key} → ${each.value}"
+  description = "managed by terraform (claudharmony-infra/platform/edge)"
+  kind        = "zone"
+  phase       = "http_request_dynamic_redirect"
+
+  rules = [{
+    ref         = "old_domain_301"
+    description = "${each.key} → ${each.value} (같은 호스트 앞부분·경로·쿼리)"
+    expression  = "true"
+    action      = "redirect"
+    action_parameters = {
+      from_value = {
+        status_code = 301
+        target_url = {
+          # full_uri 에 쿼리까지 들어 있으므로 preserve_query_string 은 끈다 (켜면 쿼리가 두 번 붙음)
+          expression = "wildcard_replace(http.request.full_uri, r\"https://*${each.key}/*\", r\"https://$${1}${each.value}/$${2}\")"
+        }
+        preserve_query_string = false
+      }
+    }
+  }]
+}

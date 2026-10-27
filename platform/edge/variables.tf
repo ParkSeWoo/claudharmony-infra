@@ -51,3 +51,9 @@ variable "console_allowed_emails" {
     error_message = "CONSOLE_ALLOWED_EMAILS 가 비어 있으면 콘솔이 아무 보호 없이 열릴 수 있어 막는다."
   }
 }
+
+variable "redirect_zones" {
+  description = "옛 도메인 → 새 도메인 301 (Cloudflare Single Redirect). 같은 서브도메인·경로·쿼리로 보낸다. 빈 map = 끔"
+  type        = map(string)
+  default     = {}
+}

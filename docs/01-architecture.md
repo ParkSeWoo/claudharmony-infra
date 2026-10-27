@@ -5,13 +5,13 @@
 ## 한 줄 요약
 
 사무실 Mac 한 대의 Docker 위에 **Kubernetes v1.37 (kind)** 클러스터를 두고, **Terraform** 으로 전부 관리한다.
-외부 공개는 **Cloudflare Tunnel + 도메인 `claudharmony.io`**, 앱 배포는 **GitHub Actions (self-hosted runner)**, 관리는 **관리자 콘솔**.
+외부 공개는 **Cloudflare Tunnel + 도메인 `cloudharmony.io`**, 앱 배포는 **GitHub Actions (self-hosted runner)**, 관리는 **관리자 콘솔**.
 
 ## 1. 전체 그림 (System Context)
 
 ```mermaid
 flowchart LR
-    USER[방문자] -->|https://claudharmony.io| CF
+    USER[방문자] -->|https://cloudharmony.io| CF
     ADMIN[관리자] -->|http://console.localhost| MAC
     DEVR[개발자] -->|git push| GH[GitHub<br/>web · api · console · infra]
 
@@ -87,9 +87,9 @@ flowchart TB
         KC[Keycloak 26.7] --> KPG[(pg · DB keycloak)]
       end
       CFD --> GW
-      GW -->|auth.claudharmony.io /realms/공개 realm<br/>auth.localhost 전체| KC
+      GW -->|auth.cloudharmony.io /realms/공개 realm<br/>auth.localhost 전체| KC
       GW -->|hostnames 없음 = 기본| PW
-      GW -->|dev.claudharmony.io<br/>dev.localhost| DW
+      GW -->|dev.cloudharmony.io<br/>dev.localhost| DW
       GW -->|console.localhost| C
       OP -. 관리 .-> PPG & DPG & KPG
       PW & DW -. OIDC .-> KC
@@ -123,7 +123,7 @@ sequenceDiagram
     Note over CF: TLS 종단, (console 은 Access 로그인)
     CF->>T: 터널로 전달 (Host 헤더 유지)
     T->>G: http://claudharmony-gateway:80
-    Note over G: HTTPRoute 매칭<br/>Host=claudharmony.io → prd 기본 라우트
+    Note over G: HTTPRoute 매칭<br/>Host=cloudharmony.io → prd 기본 라우트
     G->>W: Service web.prd → Pod
     W->>A: SSR 서버 간 호출 http://api
     A->>P: jdbc pg-rw.prd:5432
@@ -134,8 +134,8 @@ sequenceDiagram
 
 | 주소 | 어디로 | 비고 |
 |------|--------|------|
-| https://claudharmony.io, www | prd web | 기본(catch-all) 라우트 |
-| https://dev.claudharmony.io | dev web | hostname 라우트 |
+| https://cloudharmony.io, www | prd web | 기본(catch-all) 라우트 |
+| https://dev.cloudharmony.io | dev web | hostname 라우트 |
 | http://localhost, http://192.168.45.214 | prd web | 사무실 |
 | http://dev.localhost | dev web | 사무실 Mac |
 | http://console.localhost | console | 사무실 Mac (공개 주소는 Access 준비 후) |

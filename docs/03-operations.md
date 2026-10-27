@@ -72,7 +72,7 @@ scripts/setup-runner.sh            # GitHub Actions self-hosted runner 등록
 | 적용 | `scripts/infra.sh dev apply` |
 | 상태 | `scripts/infra.sh dev status` / `cluster status` / `gateway status` |
 | 로그 | `scripts/infra.sh dev logs hello-app` / `logs tunnel` |
-| 외부 주소 | `scripts/infra.sh prd url` → https://claudharmony.io |
+| 외부 주소 | `scripts/infra.sh prd url` → https://cloudharmony.io |
 | 접속 점검 | `scripts/infra.sh prd check` |
 | 현재 배포 버전 | `curl http://localhost/version` , `curl http://dev.localhost/version` |
 | 로그인 서버 | 관리 콘솔 http://auth.localhost/admin/ (계정 `claudharmony-admin`, 비밀번호는 `kubectl -n identity get secret keycloak-admin -o jsonpath='{.data.password}' \| base64 -d \| pbcopy`) — [인증 서버](12-identity.md) |

@@ -133,8 +133,8 @@ curl -s -H 'Host: dev.localhost' http://127.0.0.1/version       # Host 헤더로
 ```bash
 kubectl -n edge get deploy,pods
 kubectl -n edge logs deploy/cloudflared | grep -E 'Registered tunnel connection' | tail -4   # icn = 서울 엣지
-dig +short claudharmony.io                       # Cloudflare IP (사무실 IP 아님)
-curl -sI https://claudharmony.io | grep -i server
+dig +short cloudharmony.io                       # Cloudflare IP (사무실 IP 아님)
+curl -sI https://cloudharmony.io | grep -i server
 scripts/infra.sh prd check
 ```
 
@@ -200,7 +200,7 @@ scripts/db-schema.sh dev plan ~/workspace/claudharmony-api/db/schema.sql
 ```bash
 scripts/infra.sh identity status
 curl -s -H 'Host: auth.localhost' http://127.0.0.1/realms/claudharmony-dev/.well-known/openid-configuration | python3 -m json.tool | head
-curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' -H 'Host: auth.claudharmony.io' http://127.0.0.1/admin/   # 302 → 공개 주소에서 관리 콘솔 차단
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' -H 'Host: auth.cloudharmony.io' http://127.0.0.1/admin/   # 302 → 공개 주소에서 관리 콘솔 차단
 kubectl -n dev get secret keycloak-api -o jsonpath='{.data.issuer-uri}' | base64 -d; echo
 ```
 

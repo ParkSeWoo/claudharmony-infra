@@ -4,7 +4,7 @@
 
 | 주소 | 용도 | 공개 범위 |
 |------|------|-----------|
-| https://auth.claudharmony.io | 로그인 화면, 토큰 발급 | 인터넷 (공개 realm 경로만) |
+| https://auth.cloudharmony.io | 로그인 화면, 토큰 발급 | 인터넷 (공개 realm 경로만) |
 | http://auth.localhost/admin/ | 관리 콘솔 | 사무실 Mac 전용 |
 
 - 이미지 `quay.io/keycloak/keycloak:26.7.5`, Namespace `identity`, 전용 PostgreSQL(CNPG `identity/pg`, DB `keycloak`)
@@ -23,7 +23,7 @@
 | **client** | Keycloak에 로그인을 맡기는 앱 | `web`, `api`, `console` |
 | **role** | 권한 이름표 | `user`(가입 시 기본), `admin` |
 | **Identity Provider (broker)** | Keycloak이 다시 외부 로그인(Google 등)에 위임 | `social.tf` (키 등록 대기) |
-| **issuer** | 토큰을 발급한 주소. 앱은 이 값이 맞는 토큰만 믿음 | `https://auth.claudharmony.io/realms/<realm>` |
+| **issuer** | 토큰을 발급한 주소. 앱은 이 값이 맞는 토큰만 믿음 | `https://auth.cloudharmony.io/realms/<realm>` |
 | **JWKS** | 토큰 서명을 검증할 공개키 목록 | api가 클러스터 안 주소로 받아감 |
 | **audience (aud)** | 토큰을 받을 대상 | web이 받은 토큰에 `aud=api` |
 
@@ -33,7 +33,7 @@
 sequenceDiagram
     participant U as 브라우저
     participant W as web (SvelteKit 서버)
-    participant K as Keycloak<br/>auth.claudharmony.io
+    participant K as Keycloak<br/>auth.cloudharmony.io
     participant A as api (Spring)
     U->>W: /login
     W-->>U: 302 → Keycloak 로그인 화면 (code_challenge)
@@ -57,7 +57,7 @@ flowchart LR
       AB[관리자 브라우저<br/>auth.localhost]
       TF[Terraform<br/>platform/realms]
     end
-    B -->|https auth.claudharmony.io| CF[Cloudflare Tunnel]
+    B -->|https auth.cloudharmony.io| CF[Cloudflare Tunnel]
     CF --> GW[Envoy Gateway]
     AB -->|:80| GW
     GW -->|HTTPRoute keycloak-public<br/>/realms/claudharmony*, /resources| KC
@@ -72,13 +72,13 @@ flowchart LR
     end
 ```
 
-**공개 범위를 경로로 나눈 이유:** Keycloak 공식 권장 구성입니다. 인터넷에는 로그인에 필요한 `/realms/<공개 realm>`, `/resources`만 엽니다. `/admin`과 `/realms/master`는 공개 주소에서 `https://claudharmony.io/`로 302 리다이렉트됩니다. 관리 콘솔은 `auth.localhost`(Cloudflare 터널이 받지 않는 호스트)에서만 열립니다.
+**공개 범위를 경로로 나눈 이유:** Keycloak 공식 권장 구성입니다. 인터넷에는 로그인에 필요한 `/realms/<공개 realm>`, `/resources`만 엽니다. `/admin`과 `/realms/master`는 공개 주소에서 `https://cloudharmony.io/`로 302 리다이렉트됩니다. 관리 콘솔은 `auth.localhost`(Cloudflare 터널이 받지 않는 호스트)에서만 열립니다.
 
-| 요청 (Host: auth.claudharmony.io) | 결과 |
+| 요청 (Host: auth.cloudharmony.io) | 결과 |
 |---|---|
 | `/realms/claudharmony/.well-known/openid-configuration` | 200 |
 | `/realms/claudharmony-dev/account` | 200 |
-| `/admin/`, `/realms/master/...`, `/` | 302 → https://claudharmony.io/ |
+| `/admin/`, `/realms/master/...`, `/` | 302 → https://cloudharmony.io/ |
 | `/realms/claudharmony-devx/` (비슷한 이름) | 302 — Gateway API PathPrefix는 경로 **단위**로 비교 |
 
 ## 3. Terraform — 왜 스택이 두 개인가
@@ -108,7 +108,7 @@ scripts/infra.sh identity status
 
 | 변수 | 값 | 이유 |
 |------|----|------|
-| `KC_HOSTNAME` | `https://auth.claudharmony.io` | 토큰 issuer를 항상 공개 주소로 고정 |
+| `KC_HOSTNAME` | `https://auth.cloudharmony.io` | 토큰 issuer를 항상 공개 주소로 고정 |
 | `KC_HOSTNAME_ADMIN` | `http://auth.localhost` | 관리 콘솔 주소 분리 |
 | `KC_HOSTNAME_BACKCHANNEL_DYNAMIC` | `true` | 클러스터 안 앱은 `http://keycloak.identity.svc`로 토큰 교환·JWKS 요청 |
 | `KC_HTTP_ENABLED` / `KC_PROXY_HEADERS` | `true` / `xforwarded` | TLS는 Cloudflare에서 끝나고, 원래 https인지는 헤더로 앎 |
@@ -158,7 +158,7 @@ dev realm의 확인용 사용자 `tester`입니다. 비밀번호는 Secret `dev/
 
 ### 4-3. 공개 주소 — `platform/edge`
 
-`hostnames`에 `auth.claudharmony.io`를 추가하면 DNS 레코드(proxied CNAME → 터널)와 터널 ingress가 함께 생깁니다. Gateway가 호스트 이름으로 Keycloak HTTPRoute를 고릅니다.
+`hostnames`에 `auth.cloudharmony.io`를 추가하면 DNS 레코드(proxied CNAME → 터널)와 터널 ingress가 함께 생깁니다. Gateway가 호스트 이름으로 Keycloak HTTPRoute를 고릅니다.
 
 ```bash
 scripts/infra.sh edge apply   # Cloudflare 토큰 필요 — 사람이 직접 실행
@@ -166,7 +166,7 @@ scripts/infra.sh edge apply   # Cloudflare 토큰 필요 — 사람이 직접 �
 
 ### 4-4. 공개 로그인 화면 (인터넷)
 
-`https://auth.claudharmony.io/realms/claudharmony-dev/account`에 들어가면 Keycloak 로그인 화면이 한국어로 나옵니다. 제목은 realm 표시 이름입니다. 로그인 화면 테마는 앱 세션의 claudharmony-keycloak 이미지로 바꿀 예정입니다([5-1](#5-1-커스텀-이미지-로그인-테마-배포)).
+`https://auth.cloudharmony.io/realms/claudharmony-dev/account`에 들어가면 Keycloak 로그인 화면이 한국어로 나옵니다. 제목은 realm 표시 이름입니다. 로그인 화면 테마는 앱 세션의 claudharmony-keycloak 이미지로 바꿀 예정입니다([5-1](#5-1-커스텀-이미지-로그인-테마-배포)).
 
 ![공개 로그인 화면 — 한국어](images/keycloak/11-login-page.png)
 
@@ -239,8 +239,8 @@ scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
 ## 7. 소셜 로그인 추가
 
 1. 각 서비스 개발자 콘솔에서 OAuth 앱을 만들고, redirect URI 두 개를 등록합니다:
-   - `https://auth.claudharmony.io/realms/claudharmony/broker/<alias>/endpoint`
-   - `https://auth.claudharmony.io/realms/claudharmony-dev/broker/<alias>/endpoint`
+   - `https://auth.cloudharmony.io/realms/claudharmony/broker/<alias>/endpoint`
+   - `https://auth.cloudharmony.io/realms/claudharmony-dev/broker/<alias>/endpoint`
    - `<alias>` = `google` | `github` | `kakao` | `naver`
 2. Mac에 `~/.claudharmony/identity.env`(chmod 600, 저장소 밖)를 만듭니다:
    ```bash
@@ -276,7 +276,7 @@ scripts/deploy.sh identity keycloak claudharmony/keycloak:<YYYYMMDD-sha>
 
 ## 9. 다음
 
-- [x] `auth.claudharmony.io` DNS (edge apply, 사용자 실행) — 공개 경로 200, `/admin`·master 302 확인
+- [x] `auth.cloudharmony.io` DNS (edge apply, 사용자 실행) — 공개 경로 200, `/admin`·master 302 확인
 - [x] 공개 로그인 화면·로그인 후 계정 화면 확인 (스크린샷 4-4)
 - [ ] 소셜 로그인 키 등록 (Google·카카오부터)
 - [ ] 앱 연동 (앱 세션): web 로그인, api JWT 검증, console `admin` 역할 → Cloudflare Access 대신 Keycloak으로 콘솔 보호

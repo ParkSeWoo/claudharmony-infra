@@ -3,7 +3,7 @@
 Claud Harmony 사무실 인프라 — **Kubernetes v1.37 (kind) + Envoy Gateway + Terraform**.
 
 ```
-https://claudharmony.io → Cloudflare Tunnel → Gateway(Envoy) → HTTPRoute → Service → Pod (dev / prd Namespace)
+https://cloudharmony.io → Cloudflare Tunnel → Gateway(Envoy) → HTTPRoute → Service → Pod (dev / prd Namespace)
 ```
 
 ## 빠른 시작
@@ -16,7 +16,7 @@ scripts/infra.sh identity apply  # 인증 서버 Keycloak (docs/12-identity.md)
 scripts/infra.sh realms apply    # Keycloak realm·client·계정
 scripts/infra.sh dev apply       # 3단계: dev 환경
 scripts/infra.sh prd apply       #        prd 환경
-scripts/infra.sh prd check       # https://claudharmony.io 확인
+scripts/infra.sh prd check       # https://cloudharmony.io 확인
 ```
 
 - 앱 배포: [claudharmony-web](https://github.com/ParkSeWoo/claudharmony-web) · [claudharmony-api](https://github.com/ParkSeWoo/claudharmony-api) — `develop` push → dev 자동, `release/YYYYMMDD` → prd 수동

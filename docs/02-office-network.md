@@ -55,7 +55,7 @@ flowchart TB
 
 ### 현재 외부 공개 방식: 도메인 + Cloudflare Named Tunnel (2026-10-24 ~)
 
-`claudharmony.io` / `www` → prd, `dev.claudharmony.io` → dev. 상세는 [도메인 연결](08-domain.md).
+`cloudharmony.io` / `www` → prd, `dev.cloudharmony.io` → dev. 상세는 [도메인 연결](08-domain.md).
 
 ### (이전) Cloudflare Quick Tunnel — 도메인 연결 후 제거
 

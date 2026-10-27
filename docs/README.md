@@ -11,7 +11,7 @@
 | 05 | [Kubernetes 학습 가이드](05-kubernetes-guide.md) | 우리 클러스터로 배우는 K8s — 개념 · 코드 위치 · 실습 명령 |
 | 06 | [CI/CD](06-cicd.md) | 브랜치 전략(develop→dev, release→prd), 파이프라인, 러너 |
 | 07 | [작업 기록](07-worklog.md) | 단계별 작업 · 문제 · 원인 · 해결 |
-| 08 | [도메인 연결](08-domain.md) | claudharmony.io + Cloudflare Tunnel — 설정 순서, 토큰 권한, 트러블슈팅 |
+| 08 | [도메인 연결](08-domain.md) | cloudharmony.io + Cloudflare Tunnel — 설정 순서, 토큰 권한, 트러블슈팅 |
 | 09 | [데이터베이스](09-database.md) | PostgreSQL 18 + PostGIS (CloudNativePG), 계정·접속(db.sh), 데이터 플랫폼 로드맵 |
 | 10 | [관리자 콘솔](10-console.md) | 조회 화면, 구조, 최소 권한(RBAC), Access 보호, 로드맵 |
 | 11 | [학습 가이드](11-learning-guide.md) | 컨테이너 → 클러스터 → 워크로드 → Gateway → 외부 공개 → Terraform → DB → 인증 → CI/CD → 운영 → 장애 사례, 단계별 확인 명령·실습 |

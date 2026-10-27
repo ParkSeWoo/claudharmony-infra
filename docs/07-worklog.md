@@ -690,6 +690,17 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 ---
 
+### 56. 새 도메인 — 3단계 옛 도메인 301 + 문서 도메인 교체
+
+- 토큰: 옛 zone 정책에 Dynamic URL Redirects Edit가 없어 `POST /zones/<옛>/rulesets` 403(10000). 사용자가 claudharmony.io 정책에 추가 → entrypoint 조회가 10003(규칙 없음)으로 바뀐 것으로 권한 확인
+- edge `redirect_zones = { claudharmony.io = cloudharmony.io }` → `cloudflare_ruleset.redirect` 1 add (사용자 실행)
+- 확인 (`curl -sI`): apex `/trends?x=1`, www `/blog`, dev, auth openid-configuration, console `/?continue` 모두 301 → 새 도메인의 같은 경로·쿼리. 새 도메인 200
+- 커밋 `342f696`. 스크린샷 `15-old-domain-301.png`(전/후), `16-old-url-lands-new.png`
+- 문서: 공개 주소를 cloudharmony.io로 교체(worklog 제외, `claudharmony.io/...` 라벨 키는 그대로), `08-domain.md`에 이전 절차 절 추가
+- 남은 것: 앱 세션의 keycloak 이미지(#6) prd 배포(사용자 승인 대기). 내부 이름(저장소·이미지·러너·realm·클러스터)은 그대로 — 별도 결정
+
+---
+
 ## 템플릿 (다음 작업용)
 
 ```markdown

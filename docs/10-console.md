@@ -6,7 +6,7 @@ AWS/GCP 콘솔처럼 사무실 Kubernetes 인프라를 한 화면에서 보는 �
 | 주소 | 상태 |
 |------|------|
 | http://console.localhost | ✅ 사무실 Mac |
-| https://console.claudharmony.io | ✅ 2026-10-25 공개 — Keycloak 로그인, admin 역할만 |
+| https://console.cloudharmony.io | ✅ 2026-10-25 공개 — Keycloak 로그인, admin 역할만 |
 
 ## 1단계 — 조회 전용 (2026-10-24)
 
@@ -39,10 +39,10 @@ AWS/GCP 콘솔처럼 사무실 Kubernetes 인프라를 한 화면에서 보는 �
 
 ```mermaid
 flowchart LR
-    B[브라우저] -->|console.localhost / console.claudharmony.io| GW[Gateway]
+    B[브라우저] -->|console.localhost / console.cloudharmony.io| GW[Gateway]
     GW -->|HTTPRoute hostnames| C[console Pod<br/>ns console]
     C -->|ServiceAccount console<br/>읽기 전용| API[kube-apiserver]
-    C -->|/version| EXT[https://claudharmony.io<br/>https://dev.claudharmony.io]
+    C -->|/version| EXT[https://cloudharmony.io<br/>https://dev.cloudharmony.io]
     C -->|public API| GH[GitHub<br/>infra 배포 기록 커밋]
 ```
 
@@ -51,7 +51,7 @@ flowchart LR
 | 스택 | Java 25, Spring Boot 4.1.2, fabric8 kubernetes-client 7.9.0, Thymeleaf + htmx 2.0.11 |
 | 코드 컨벤션 | **Google Java Style** — Spotless 8.9.0 + google-java-format 1.36.1 (`./gradlew spotlessApply`) |
 | 배포 | `main` push → `deploy.yml` (self-hosted runner) → `deploy.sh console console <image>` |
-| 인프라 | `envs/console` — Namespace `console`, 서비스 카탈로그 1개, `hostnames = [console.localhost, console.claudharmony.io]` |
+| 인프라 | `envs/console` — Namespace `console`, 서비스 카탈로그 1개, `hostnames = [console.localhost, console.cloudharmony.io]` |
 
 ## 권한 — 최소 권한
 
@@ -69,7 +69,7 @@ ClusterRole `claudharmony-console-read` + ServiceAccount `console` (`envs/consol
 
 ## 공개 주소 보호 — Cloudflare Access
 
-`console.claudharmony.io` 는 Cloudflare 엣지에서 **이메일 일회용 코드 로그인**을 통과해야 터널에 닿게 한다 (`platform/edge`).
+`console.cloudharmony.io` 는 Cloudflare 엣지에서 **이메일 일회용 코드 로그인**을 통과해야 터널에 닿게 한다 (`platform/edge`).
 허용 이메일은 공개 저장소에 두지 않고 `~/.claudharmony/cloudflare.env` 의 `CONSOLE_ALLOWED_EMAILS` 로 주입.
 
 ⚠️ 2026-10-24 첫 시도: 토큰에 Access 쓰기 권한이 없어 **DNS 는 생기고 Access 는 실패** → 1분여 보호 없이 열림(콘솔 미배포 상태라 공개 홈페이지만 보임) → 즉시 DNS 제거.

@@ -26,6 +26,18 @@ variable "public_hostname" {
   default     = "auth.claudharmony.io"
 }
 
+variable "public_aliases" {
+  description = "공개 주소와 같은 로그인 경로를 받는 다른 호스트 (도메인 이전 병행 기간). 토큰 발급자(iss)는 public_hostname 하나로 고정"
+  type        = list(string)
+  default     = ["auth.cloudharmony.io"]
+}
+
+variable "home_hostname" {
+  description = "공개 주소에서 로그인 외 경로(/admin 등)를 돌려보낼 서비스 홈"
+  type        = string
+  default     = "claudharmony.io"
+}
+
 variable "admin_hostname" {
   description = "관리 콘솔 주소 (사무실 Mac 에서만 — 인터넷에는 /admin 을 열지 않는다)"
   type        = string

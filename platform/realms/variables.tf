@@ -43,15 +43,15 @@ variable "realms" {
     prd = {
       realm        = "claudharmony"
       display_name = "클라우드 하모니"
-      web_urls     = ["https://claudharmony.io", "https://www.claudharmony.io", "http://localhost"]
-      console_urls = ["https://console.claudharmony.io", "http://console.localhost"]
+      web_urls     = ["https://cloudharmony.io", "https://www.cloudharmony.io", "https://claudharmony.io", "https://www.claudharmony.io", "http://localhost"]
+      console_urls = ["https://console.cloudharmony.io", "https://console.claudharmony.io", "http://console.localhost"]
       test_user    = false
       login_theme  = "claudharmony"
     }
     dev = {
       realm        = "claudharmony-dev"
       display_name = "클라우드 하모니 (dev)"
-      web_urls     = ["https://dev.claudharmony.io", "http://dev.localhost", "http://localhost:5173"]
+      web_urls     = ["https://dev.cloudharmony.io", "https://dev.claudharmony.io", "http://dev.localhost", "http://localhost:5173"]
       console_urls = []
       test_user    = true
       login_theme  = "claudharmony" # claudharmony-keycloak 이미지

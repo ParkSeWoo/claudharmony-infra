@@ -244,7 +244,7 @@ resource "kubectl_manifest" "route_public" {
     metadata   = { name = "keycloak-public", namespace = local.namespace, labels = local.labels }
     spec = {
       parentRefs = [{ name = var.gateway.name, namespace = var.gateway.namespace }]
-      hostnames  = [var.public_hostname]
+      hostnames  = concat([var.public_hostname], var.public_aliases)
       rules = [
         {
           matches = concat(
@@ -262,7 +262,7 @@ resource "kubectl_manifest" "route_public" {
         {
           # 그 밖의 모든 경로(/admin, /realms/master ...) → 서비스 홈으로
           matches = [{ path = { type = "PathPrefix", value = "/" } }]
-          filters = [{ type = "RequestRedirect", requestRedirect = { scheme = "https", hostname = "claudharmony.io", path = { type = "ReplaceFullPath", replaceFullPath = "/" }, statusCode = 302 } }]
+          filters = [{ type = "RequestRedirect", requestRedirect = { scheme = "https", hostname = var.home_hostname, path = { type = "ReplaceFullPath", replaceFullPath = "/" }, statusCode = 302 } }]
         },
       ]
     }

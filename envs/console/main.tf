@@ -16,7 +16,7 @@ module "env" {
   source = "../../modules/k8s/env"
 
   environment   = "console"
-  hostnames     = ["console.localhost", "console.claudharmony.io"]
+  hostnames     = ["console.localhost", "console.cloudharmony.io", "console.claudharmony.io"]
   enable_tunnel = false
   services      = var.services
   images        = var.images

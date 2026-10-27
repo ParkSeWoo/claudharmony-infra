@@ -3,5 +3,5 @@ output "tunnel_id" {
 }
 
 output "urls" {
-  value = [for h in var.hostnames : "https://${h}"]
+  value = [for h in local.hostnames : "https://${h}"]
 }

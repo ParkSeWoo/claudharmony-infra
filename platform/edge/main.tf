@@ -1,11 +1,18 @@
-# 2.5단계 — Edge: 고정 도메인(claudharmony.io) → Cloudflare Tunnel → 클러스터 Gateway
+# 2.5단계 — Edge: 고정 도메인(cloudharmony.io · 옛 claudharmony.io) → Cloudflare Tunnel → 클러스터 Gateway
 #
 #   사용자 ─HTTPS→ Cloudflare(인증서·DNS) ═터널(아웃바운드)═ cloudflared Pod(ns edge) ─HTTP→ Gateway → HTTPRoute
 #
 # Quick tunnel(랜덤 주소)과 달리 named tunnel 은 주소가 고정되고, 커넥터를 여러 개 띄워 이중화할 수 있다.
 
 data "cloudflare_zone" "this" {
-  filter = { name = var.domain }
+  for_each = var.zones
+  filter   = { name = each.key }
+}
+
+locals {
+  # 호스트 → zone (DNS 레코드 key 는 호스트 이름 그대로 — 옛 state 주소 유지)
+  host_zone = merge([for z, hosts in var.zones : { for h in hosts : h => z }]...)
+  hostnames = sort(keys(local.host_zone))
 }
 
 # ① 터널 (Cloudflare 쪽 객체) — 설정은 Cloudflare 가 보관(config_src = cloudflare)
@@ -27,7 +34,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "this" {
 
   config = {
     ingress = concat(
-      [for h in var.hostnames : { hostname = h, service = var.gateway_service }],
+      [for h in local.hostnames : { hostname = h, service = var.gateway_service }],
       [{ service = "http_status:404" }] # 마지막 규칙은 반드시 catch-all
     )
   }
@@ -35,10 +42,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "this" {
 
 # ③ DNS — 각 호스트를 터널로 (proxied = Cloudflare 가 HTTPS 종단)
 resource "cloudflare_dns_record" "this" {
-  for_each = toset(var.hostnames)
+  for_each = local.host_zone
 
-  zone_id = data.cloudflare_zone.this.zone_id
-  name    = each.value
+  zone_id = data.cloudflare_zone.this[each.value].zone_id
+  name    = each.key
   type    = "CNAME"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.this.id}.cfargotunnel.com"
   proxied = true

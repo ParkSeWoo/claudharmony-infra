@@ -3,16 +3,15 @@ variable "cloudflare_account_id" {
   type        = string
 }
 
-variable "domain" {
-  description = "Cloudflare 에 등록된 도메인 (zone)"
-  type        = string
-  default     = "claudharmony.io"
-}
-
-variable "hostnames" {
-  description = "터널로 받을 호스트 이름 → 모두 Gateway 로 보낸다. 환경 구분은 HTTPRoute hostnames 가 한다"
-  type        = list(string)
-  default     = ["claudharmony.io", "www.claudharmony.io", "dev.claudharmony.io", "auth.claudharmony.io", "console.claudharmony.io"]
+variable "zones" {
+  description = "Cloudflare zone(도메인) → 그 zone 에서 터널로 받을 호스트 이름. 모두 Gateway 로 보내고, 환경 구분은 HTTPRoute hostnames 가 한다"
+  type        = map(list(string))
+  default = {
+    # 대표 도메인 (2026-10 철자 수정으로 새로 구입)
+    "cloudharmony.io" = ["cloudharmony.io", "www.cloudharmony.io", "dev.cloudharmony.io", "auth.cloudharmony.io", "console.cloudharmony.io"]
+    # 옛 도메인 — 병행 서비스 (나중에 새 도메인으로 301 예정)
+    "claudharmony.io" = ["claudharmony.io", "www.claudharmony.io", "dev.claudharmony.io", "auth.claudharmony.io", "console.claudharmony.io"]
+  }
 }
 
 variable "gateway_service" {

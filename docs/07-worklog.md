@@ -674,6 +674,22 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 ---
 
+### 55. 새 도메인 — 2단계 Keycloak 발급자(iss) 전환
+
+- 코드 (`88249cd`):
+  - identity: `public_hostname` = auth.cloudharmony.io(KC_HOSTNAME), `public_aliases` = [auth.claudharmony.io], 로그인 외 경로 302 대상 `home_hostname` = cloudharmony.io
+  - realms: `public_base` = https://auth.cloudharmony.io → Secret 5개(keycloak-web·keycloak-api dev/prd, keycloak-console)의 issuer-uri
+  - edge: 3단계용 `redirect_zones` + `cloudflare_ruleset`(http_request_dynamic_redirect, 기본 꺼짐)
+- 실행 (사용자, 자동 권한 확인이 운영 배포로 막아서): identity apply(2 change, Keycloak 재시작) → realms apply(5 change) → dev·prd web/api, console `rollout restart`
+  - Secret만 바뀌면 Pod가 env를 다시 읽지 않으므로 재시작이 필요 (app-secrets 해시 annotation은 keycloak-* Secret엔 없음)
+- 확인: issuer `https://auth.cloudharmony.io/realms/claudharmony`(dev도 동일), console.cloudharmony.io → auth.cloudharmony.io 로그인 화면
+- 기존 로그인 세션·토큰은 iss가 달라 무효 → 한 번 다시 로그인
+- 순서 조율: 앱 세션의 keycloak 이미지 배포(deploy.sh identity = identity 스택 전체 apply)를 2단계 push 뒤로 미룸 — 중간에 돌면 KC_HOSTNAME과 Secret issuer가 어긋날 수 있음
+- 사무실 Mac만 apex `cloudharmony.io`를 못 찾음(시스템 DNS 캐시의 NXDOMAIN). 1.1.1.1로는 200 → `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`
+- 스크린샷: `docs/images/domain/13-login-new-auth.png`, `14-issuer-after.png`
+
+---
+
 ## 템플릿 (다음 작업용)
 
 ```markdown

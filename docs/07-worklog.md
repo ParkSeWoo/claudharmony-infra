@@ -653,7 +653,7 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 ---
 
-### 54. 새 도메인 cloudharmony.io — 1단계 병행 서비스 (진행 중)
+### 54. 새 도메인 cloudharmony.io — 1단계 병행 서비스
 
 - 배경: 철자 수정(claudharmony → cloudharmony). 사용자가 cloudharmony.io 구입(Cloudflare, 같은 계정). 순서: ① 두 도메인 병행 → ② Keycloak 발급자(KC_HOSTNAME) 전환 → ③ 옛 도메인 301
 - 코드 (`2264071`):
@@ -664,8 +664,13 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 - apply (사용자 실행): identity 1 change, realms 4 change(+ prd 관리자 `email_verified` 드리프트 정리), dev 1 change, console 1 add(빈 app-secrets) + 1 change
 - **문제**: edge plan `failed to find exactly one result … 0 found` (`data.cloudflare_zone.this["cloudharmony.io"]`)
   **원인**: API 토큰의 Zone Resources가 claudharmony.io 하나로 지정 — `/zones` 결과에 옛 도메인만 보임
-  **해결**: 토큰 Edit → Zone Resources에 cloudharmony.io(또는 All zones) 추가 (대기 중)
-- 블로그용 스크린샷: `docs/images/domain/01~07` (앱 세션이 블로그 글 작성)
+  **해결**: 기존 계정 토큰 편집(사용자) → 정책에 "지정된 도메인 cloudharmony.io" 추가 (Zone Read, DNS Edit), claudharmony.io 정책에 Dynamic URL Redirects Edit 추가(3단계 301용). 토큰 값은 그대로
+  **배운 점**: 새 대시보드는 권한을 "정책"으로 묶음 — 범위를 계정으로 두면 영역 권한(Zone/DNS)이 목록에 안 나옴. 범위 드롭다운을 "지정된 도메인"으로 바꿔야 함
+- edge apply: DNS 5 add(새 zone에 기존 레코드 없음 확인), 터널 ingress 5 → 10 호스트. 기존 레코드 변경 없음
+- 확인: 새·옛 도메인 모두 홈·www·dev 200, auth openid-configuration 200, console 302 → Keycloak 로그인(redirect_uri `console.cloudharmony.io` 허용됨)
+  - 사무실 Mac은 앞서 조회한 NXDOMAIN이 잠깐 캐시돼 apex만 `000` → 1.1.1.1로는 바로 200, 잠시 뒤 로컬도 정상
+- 아직 발급자(iss)는 `auth.claudharmony.io` — 새 도메인에서 로그인해도 로그인 화면은 옛 auth 주소. 2단계에서 전환
+- 블로그용 스크린샷: `docs/images/domain/01~12` (앱 세션이 블로그 글 작성)
 
 ---
 

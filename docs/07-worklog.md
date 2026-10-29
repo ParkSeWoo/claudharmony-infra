@@ -701,6 +701,17 @@ ingress-nginx 는 2026-03 retire → **Gateway API** 채택.
 
 ---
 
+### 57. 캐시 purge(개인정보 이미지) + Search Console TXT 레코드 보존 확인
+
+- 앱 세션 요청: dev 엣지 캐시에 남은 GA 실시간 스크린샷 첫 버전(지역 짐작 가능) purge
+  - 원본(dev web)은 이미 404, Cloudflare 캐시만 HIT 200. 토큰에 Cache Purge 권한이 없어 API purge 403(10000) → 사용자가 대시보드(캐싱 → 구성 → 사용자 지정 제거 → URL)로 처리
+  - 확인: `404`, `cf-cache-status: MISS`
+- Google Search Console 도메인 속성 확인용 TXT(`google-site-verification`)가 cloudharmony.io zone에 자동 추가됨
+  - edge는 호스트별 CNAME만 관리 → `edge plan` = No changes, TXT는 유지. `08-domain.md`에 "Terraform 밖 레코드" 표 추가
+- 참고: 앱 세션이 prd canonical·sitemap·robots를 https://www.cloudharmony.io로 고정. prd robots.txt는 Cloudflare 캐시(1일) 뒤 반영
+
+---
+
 ## 템플릿 (다음 작업용)
 
 ```markdown

@@ -141,3 +141,11 @@ https://console.claudharmony.io/?continue → https://console.cloudharmony.io/?c
 `full_uri`에 쿼리까지 들어 있으므로 `preserve_query_string = false`(켜면 쿼리가 두 번 붙음).
 
 내부 이름(kind 클러스터, 네임스페이스, `~/.claudharmony`, 이미지·저장소 이름, realm 이름)은 아직 claudharmony 그대로다.
+
+### Terraform 밖에서 만든 DNS 레코드
+
+edge 스택은 `zones` 에 적은 호스트의 CNAME 만 하나씩 관리한다(`cloudflare_dns_record` for_each). zone 전체를 관리하지 않으므로 대시보드·연동으로 생긴 레코드는 plan 에 나오지 않고 그대로 남는다.
+
+| 레코드 | 만든 곳 | 용도 |
+|---|---|---|
+| `cloudharmony.io` TXT `google-site-verification=…` | Google Search Console ↔ Cloudflare 연동 (2026-10) | Search Console 도메인 속성 소유권 확인 — **지우면 확인이 풀림** |
